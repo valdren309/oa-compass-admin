@@ -1,0 +1,52 @@
+:host {
+  display: inline-block;
+}
+
+.oa-toast {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  padding: 4px 12px;
+  margin-top: 4px;
+  border-radius: 999px;
+
+  font-size: 12px;
+  line-height: 1.4;
+
+  border: 1px solid var(--oa-border);
+  background: var(--oa-bg-subtle);
+  color: var(--oa-fg);
+}
+
+/* Severity variants (token-based) */
+.oa-toast--success {
+  border-color: var(--oa-success);
+}
+
+.oa-toast--warning {
+  border-color: var(--oa-warning); 
+}
+
+.oa-toast--error {
+  border-color: var(--oa-danger);
+}
+
+.oa-toast__text {
+  white-space: nowrap;
+}
+
+.oa-toast__close {
+  border: 0;
+  padding: 0 4px;
+  background: transparent;
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+  color: inherit;
+}
+
+.oa-toast__close:focus {
+  outline: 2px solid rgba(0, 0, 0, 0.25);
+  outline-offset: 1px;
+}

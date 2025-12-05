@@ -1,0 +1,89 @@
+<!-- src/app/components/user-search/user-search.component.html -->
+<section class="eca-section oa-user-search-root">
+
+  <!-- Style-guide loading overlay -->
+  <div class="loading-shade" *ngIf="searching">
+    <div class="loading-inner">
+      <mat-progress-spinner
+        mode="indeterminate"
+        diameter="40">
+      </mat-progress-spinner>
+      <div class="loading-label">Searching…</div>
+    </div>
+  </div>
+
+  <!-- Search input -->
+  <mat-form-field class="oa-search-field" appearance="fill">
+    <mat-label>Search by name, ID, email, barcode…</mat-label>
+    <input
+      matInput
+      type="text"
+      id="userSearchTerm"
+      name="userSearchTerm"
+      [(ngModel)]="searchTerm"
+      (ngModelChange)="onModelChange($event)"
+      (keydown.enter)="onSearchClick()"
+      [disabled]="searching"
+    />
+    <button
+      matSuffix
+      mat-icon-button
+      aria-label="Search"
+      (click)="onSearchClick()"
+      [disabled]="searching || !searchTerm.trim()">
+      <mat-icon>search</mat-icon>
+    </button>
+  </mat-form-field>
+
+  <!-- Error line under the field -->
+  <div class="error" *ngIf="searchError">
+    {{ searchError }}
+  </div>
+
+  <!-- Results list -->
+  <section class="results-section" *ngIf="showResults">
+    <mat-card *ngIf="results?.length; else emptyList" class="results-card">
+      <mat-card-header class="results-header">
+        <mat-card-title class="results-title">
+          Results ({{ results.length }})
+        </mat-card-title>
+
+        <button
+          mat-flat-button
+          type="button"
+          (click)="onLoadMoreClick()"
+          [disabled]="searching || !moreAvailable">
+          Load more
+        </button>
+      </mat-card-header>
+
+      <mat-card-content>
+        <mat-selection-list
+          [multiple]="false"
+          class="results-list">
+          <mat-list-option
+            *ngFor="let r of results; trackBy: trackUser"
+            [value]="r"
+            (click)="onRowClick(r)">
+            <div class="result-row">
+              <div class="result-main">
+                <div class="result-name">
+                  {{ r.first_name }} {{ r.last_name }}
+                </div>
+                <div class="result-meta">
+                  ID: {{ r.primary_id }}
+                </div>
+              </div>
+            </div>
+          </mat-list-option>
+        </mat-selection-list>
+      </mat-card-content>
+    </mat-card>
+
+    <ng-template #emptyList>
+      <div class="empty-results">
+        No matching users found.
+      </div>
+    </ng-template>
+  </section>
+</section>

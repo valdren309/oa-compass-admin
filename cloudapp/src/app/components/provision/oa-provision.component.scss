@@ -1,0 +1,27 @@
+:host {
+  display: block;
+}
+
+/* Let mat-card provide most of the structure; keep extra styling minimal */
+.oa-provision {
+  font-size: 13px;
+}
+
+/* Small tweak to header spacing */
+.oa-provision .mat-mdc-card-header {
+  padding-bottom: 4px;
+}
+
+.oa-provision .mat-mdc-card-title {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+/* Actions row: rely on eca-actions, only adjust gaps if needed */
+.oa-provision-actions {
+  margin-top: 4px;
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+}

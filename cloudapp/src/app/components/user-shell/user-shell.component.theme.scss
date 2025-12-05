@@ -1,0 +1,7 @@
+@use '@angular/material' as mat;
+
+/// Theming hook for OA Compass UserShellComponent.
+/// Colors/typography should be driven by the Alma Material theme.
+@mixin oa-user-shell-theme($theme) {
+  // Intentionally minimal for now; hook for future polish.
+}

@@ -1,0 +1,125 @@
+/* src/app/components/config/config.component.scss */
+
+:host {
+  display: block;
+}
+
+/* Card layout */
+.config-card {
+  background: var(--oa-card);
+  border-radius: 8px;
+  border: 1px solid var(--oa-border);
+  box-shadow: none;
+}
+
+.config-title-row {
+  display: flex;
+  align-items: center;
+}
+
+.config-title-spacer {
+  flex: 1 1 auto;
+}
+
+.config-loading {
+  margin-top: 8px;
+}
+
+.config-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+/* Sections */
+.config-section {
+  padding: 8px 0;
+  border-top: 1px solid var(--oa-border);
+}
+
+.config-section:first-of-type {
+  border-top: none;
+}
+
+.config-section__title {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.config-section__help {
+  margin: 0 0 8px;
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+/* Grid for fields */
+.config-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(160px, 1fr));
+  gap: 12px 24px;
+  margin-top: 4px;
+}
+
+@media (max-width: 640px) {
+  .config-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Make fields breathe vertically */
+.config-grid mat-form-field {
+  width: 100%;
+  margin-top: 4px;
+}
+
+/* Select blocks */
+.config-select {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.config-select__label {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.config-select__field {
+  width: 100%;
+}
+
+/* Give the select trigger an opaque background & border */
+.config-select__field .mat-mdc-text-field-wrapper {
+  background-color: var(--oa-card);
+  border-radius: 4px;
+  border: 1px solid var(--oa-border);
+  /* Slightly more height so the floating label never clips */
+  min-height: 44px;
+}
+
+/* Actions & messages */
+.config-actions {
+  display: flex;
+  align-items: center;
+  margin-top: 8px;
+  gap: 8px;
+}
+
+.config-actions__spacer {
+  flex: 1;
+}
+
+.config-messages {
+  margin-top: 4px;
+  font-size: 12px;
+}
+
+.config-success {
+  color: var(--oa-success);
+}
+
+.config-error {
+  color: var(--oa-danger);
+}

@@ -1,0 +1,15 @@
+@use '@angular/material' as mat;
+
+/// Theming hook for OA Config Component.
+/// Colors/typography should be driven by the Alma Material theme.
+@mixin settings-theme($theme) {
+  // Intentionally minimal for now; hook for future theming pass.
+}
+
+/* Make the mat-select dropdown panel opaque when opened in Settings */
+:host ::ng-deep .mat-mdc-select-panel {
+  background-color: var(--eca-surface, #ffffff);
+  /* Optional, but looks nicer */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+  border-radius: 4px;
+}

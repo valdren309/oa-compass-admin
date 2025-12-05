@@ -1,0 +1,50 @@
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px 6px;
+  margin-bottom: 4px;
+  background-color: var(--oa-accent);
+  color: var(--oa-accent-on);
+}
+
+.app-header-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Status line */
+.app-status-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.app-status-label {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.app-status-value {
+  font-weight: 500;
+  font-size: 13px;
+}
+
+.app-status-busy {
+  font-size: 12px;
+  font-style: italic;
+  opacity: 0.8;
+}
+
+/* Context */
+.app-context {
+  font-size: 11px;
+  opacity: 0.9;
+}
+
+/* Icon buttons inherit header color */
+.app-header .mat-mdc-icon-button {
+  color: inherit;
+}

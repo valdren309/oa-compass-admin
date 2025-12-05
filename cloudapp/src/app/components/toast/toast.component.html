@@ -1,0 +1,19 @@
+<div
+  *ngIf="message"
+  class="oa-toast"
+  [ngClass]="{
+    'oa-toast--success': type === 'success',
+    'oa-toast--warning': type === 'warning',
+    'oa-toast--error': type === 'error'
+  }">
+
+  <span class="oa-toast__text">{{ message }}</span>
+
+  <button
+    type="button"
+    class="oa-toast__close"
+    (click)="onClose()"
+    aria-label="Dismiss message">
+    ✕
+  </button>
+</div>

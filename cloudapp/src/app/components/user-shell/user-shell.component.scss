@@ -1,0 +1,25 @@
+.oa-user-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.oa-user-info-block {
+  width: 100%;
+}
+
+.oa-debug-panel {
+  margin-top: 4px;
+}
+
+.oa-debug-pre {
+  margin: 0;
+  padding: 8px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: monospace;
+  font-size: 12px;
+  line-height: 1.4;
+  background: var(--oa-bg-subtle);
+}

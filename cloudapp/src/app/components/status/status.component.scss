@@ -1,0 +1,36 @@
+:host {
+  display: block;
+}
+
+/* Minimal Material card wrapper */
+.oa-status-card {
+  padding: 0; /* Let mat-card handle overall padding */
+  font-size: 13px;
+}
+
+.oa-status-title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.oa-status-line {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.oa-status-value {
+  font-weight: 500;
+}
+
+.oa-status-busy {
+  font-style: italic;
+  opacity: 0.75;
+}
+
+.oa-status-summary {
+  font-size: 12px;
+  opacity: 0.7;
+  margin-top: 2px;
+}

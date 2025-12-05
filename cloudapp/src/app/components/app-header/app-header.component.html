@@ -1,0 +1,36 @@
+<header class="app-header">
+  <div class="app-header-main">
+
+    <!-- OA Status line -->
+    <div class="app-status-line">
+      <span class="app-status-label">OA Status:</span>
+      <span class="app-status-value">
+        {{ statusText || 'User not loaded' }}
+      </span>
+      <span *ngIf="busy" class="app-status-busy">
+        (working…)
+      </span>
+    </div>
+  </div>
+
+  <span class="spacer"></span>
+
+  <!-- Config icon (institution-level) -->
+  <button
+    mat-icon-button
+    type="button"
+    (click)="toggleConfig.emit()"
+    aria-label="Open OA Compass configuration (institution-level)">
+    <mat-icon>tune</mat-icon>
+  </button>
+
+  <!-- Per-user settings (gear) -->
+  <button
+    mat-icon-button
+    type="button"
+    (click)="toggleSettings.emit()"
+    [attr.aria-pressed]="settingsOpen"
+    aria-label="OA Compass settings">
+    <mat-icon>settings</mat-icon>
+  </button>
+</header>

@@ -1,0 +1,17 @@
+{
+   "id": "oa-compass-admin",
+   "title": "OA Compass Admin",
+   "subtitle": "Create/sync OpenAthens users",
+   "author": "Eric Parsons",
+   "description": "Provision and sync OpenAthens (Compass) accounts from Alma user records.",
+   "isWidget": false,
+   "entities": [
+      "USER"
+   ],
+   "contentSecurity": {
+      "connectSrc": [
+         "https://api-na.hosted.exlibrisgroup.com",
+         "https://app.lib.iastate.edu"
+      ]
+   }
+}

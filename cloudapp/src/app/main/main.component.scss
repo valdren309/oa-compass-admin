@@ -1,0 +1,46 @@
+/* //src/app/component/main/main.component.scss */
+.oa-main-wrap {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* Actions row under the header (uses Cloud App eca-actions pattern) */
+.oa-actions-row {
+  display: flex;
+  justify-content: flex-end;  /* buttons right-justified */
+  gap: 8px;
+  margin: 8px 0 16px;
+}
+
+/* Spacing hooks for stacked blocks if needed later */
+.oa-status-block {
+  margin-bottom: 8px;
+}
+
+.oa-provision-block {
+  margin-bottom: 8px;
+}
+
+.oa-user-info-block {
+  margin-bottom: 8px;
+}
+
+/* Debug panel and content */
+.oa-debug-panel {
+  margin-top: 8px;
+}
+
+.oa-debug-content {
+  font-family: monospace;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.oa-debug-pre {
+  margin: 4px 0 0;
+  padding: 8px;
+  border-radius: 4px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}

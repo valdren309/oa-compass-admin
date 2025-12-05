@@ -1,0 +1,90 @@
+/* src/app/components/user-search/user-search.component.scss */
+
+.oa-user-search-root {
+  position: relative;              /* so overlay positions against this */
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Search field spans the full width */
+.oa-search-field {
+  width: 100%;
+}
+
+/* Cloud App loading overlay */
+.loading-shade {
+  position: absolute;
+  inset: 0;                        /* top:0; right:0; bottom:0; left:0 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.7);
+  z-index: 10;                     /* above form field & results */
+}
+
+.loading-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.loading-label {
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+/* Error line under the field */
+.error {
+  font-size: 12px;
+  color: #c62828;
+}
+
+/* Results styling mirrors other Alma apps */
+.results-section {
+  margin-top: 8px;
+}
+
+.results-card {
+  width: 100%;
+}
+
+.results-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--eca-palette-border, #e0e0e0);
+}
+
+.results-title {
+  font-size: 13px;
+}
+
+.results-list {
+  width: 100%;
+  padding-top: 4px;
+}
+
+.result-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.result-name {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.result-meta {
+  font-size: 12px;
+  opacity: 0.75;
+}
+
+.empty-results {
+  margin-top: 8px;
+  font-size: 13px;
+  opacity: 0.75;
+}

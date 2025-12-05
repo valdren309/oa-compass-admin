@@ -1,0 +1,82 @@
+:host {
+  display: block;
+}
+
+.user-info {
+  padding: 8px 0;
+}
+
+/* Header: name + Alma ID on the left, OA username on the right */
+.user-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.user-main {
+  min-width: 0; /* allow text to wrap nicely */
+}
+
+.user-name {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.user-id {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+/* Compact OA username block */
+.oa-block {
+  text-align: right;
+  font-size: 12px;
+  min-width: 0;
+
+  .label {
+    opacity: 0.7;
+  }
+
+  .val {
+    font-weight: 600;
+    word-break: break-all;
+  }
+}
+
+/* Details grid: Email / Group / Expiry */
+.user-details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(140px, 1fr));
+  gap: 4px 16px;
+}
+
+@media (max-width: 640px) {
+  .user-details {
+    grid-template-columns: 1fr;
+  }
+}
+
+.item {
+  display: grid;
+  grid-template-columns: 90px 1fr;
+  column-gap: 8px;
+  align-items: center;
+}
+
+.label {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.val {
+  font-weight: 500;
+}
+
+.no-user {
+  margin: 0;
+  font-size: 13px;
+  opacity: 0.7;
+}

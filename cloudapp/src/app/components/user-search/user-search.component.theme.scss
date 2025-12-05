@@ -1,0 +1,7 @@
+@use '@angular/material' as mat;
+
+/// Theming hook for OA Compass UserSearchComponent.
+/// Colors/typography should be driven by the Alma Material theme.
+@mixin oa-user-search-theme($theme) {
+  // Intentionally minimal for now; hook for future polish.
+}

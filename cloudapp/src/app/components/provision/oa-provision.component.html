@@ -1,0 +1,45 @@
+<mat-card class="oa-provision">
+  <mat-card-header>
+    <mat-card-title>OpenAthens provisioning</mat-card-title>
+    <mat-card-subtitle>
+      Use the actions below to manage this user's OpenAthens account.
+    </mat-card-subtitle>
+  </mat-card-header>
+
+  <mat-card-content>
+
+    <!-- Cloud App-style actions row: primary on the right -->
+    <div class="eca-actions oa-provision-actions">
+      <!-- Verify (secondary) -->
+      <button
+        mat-flat-button
+        color="secondary"
+        type="button"
+        (click)="onVerifyClick()"
+        [disabled]="busy || !hasTargetUser">
+        Verify
+      </button>
+
+      <!-- Sync (secondary) -->
+      <button
+        mat-flat-button
+        color="secondary"
+        type="button"
+        (click)="onSyncClick()"
+        [disabled]="busy || !hasTargetUser">
+        Sync
+      </button>
+
+      <!-- Create (primary) -->
+      <button
+        mat-flat-button
+        color="primary"
+        type="button"
+        (click)="onCreateClick()"
+        [disabled]="busy || !hasTargetUser">
+        Create
+      </button>
+    </div>
+
+  </mat-card-content>
+</mat-card>

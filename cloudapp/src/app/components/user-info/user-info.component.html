@@ -1,0 +1,42 @@
+<section class="user-info">
+  <ng-container *ngIf="user || selectedUserId; else noUser">
+    <div class="user-header">
+      <!-- Left side: name + Alma ID -->
+      <div class="user-main">
+        <div class="user-name">
+          {{ displayName || (user?.first_name + ' ' + user?.last_name) || '—' }}
+        </div>
+        <div class="user-id">
+          Alma ID: {{ user?.primary_id || selectedUserId || '—' }}
+        </div>
+      </div>
+
+      <!-- Right side: OA Username (optional) -->
+      <div class="oa-block" *ngIf="oaUsername">
+        <div class="label">OA Username</div>
+        <div class="val">{{ oaUsername }}</div>
+      </div>
+    </div>
+
+    <div class="user-details">
+      <div class="item">
+        <div class="label">Email</div>
+        <div class="val">{{ email || '—' }}</div>
+      </div>
+
+      <div class="item">
+        <div class="label">User group</div>
+        <div class="val">{{ userGroup || '—' }}</div>
+      </div>
+
+      <div class="item">
+        <div class="label">Expiry</div>
+        <div class="val">{{ expiry || '—' }}</div>
+      </div>
+    </div>
+  </ng-container>
+
+  <ng-template #noUser>
+    <p class="no-user">No user selected.</p>
+  </ng-template>
+</section>

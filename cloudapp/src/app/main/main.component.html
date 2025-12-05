@@ -1,0 +1,119 @@
+<!--/src/app/component/main/main.component.html-->
+<div class="oa-main-wrap">
+
+  <!-- Combined header: OA Status + context + icons -->
+  <oa-app-header
+    [settingsOpen]="showSettings"
+    [useEntityContext]="useEntityContext"
+    [entityContextUserId]="entityContextUserId"
+    [statusText]="actionStatus || 'User not loaded'"
+    [busy]="busy"
+    (toggleSettings)="toggleSettings()"
+    (toggleConfig)="toggleConfig()">
+  </oa-app-header>
+
+  <!-- SETTINGS VIEW ------------------------------------------------------- -->
+  <section *ngIf="showSettings" class="oa-section oa-section--settings">
+    <oa-settings
+      (settingsChanged)="onSettingsChanged($event)">
+    </oa-settings>
+  </section>
+
+  <!-- CONFIG VIEW --------------------------------------------------------- -->
+  <section *ngIf="showConfig" class="oa-section oa-section--settings">
+    <oa-config></oa-config>
+  </section>
+
+  <!-- MAIN CONTENT -------------------------------------------------------- -->
+  <section
+    *ngIf="!showSettings && !showConfig"
+    class="oa-section oa-section--content">
+
+    <!-- Action buttons row (Cloud App style: mat-flat-button, primary on the right) -->
+    <div class="eca-actions oa-actions-row">
+      <!-- Neutral / secondary actions first -->
+      <button
+        mat-flat-button
+        type="button"
+        color="secondary"
+        (click)="onReset()"
+        [disabled]="busy">
+        Reset
+      </button>
+
+      <button
+        *ngIf="user"
+        mat-flat-button
+        type="button"
+        color="secondary"
+        (click)="syncOA()"
+        [disabled]="busy">
+        Sync
+      </button>
+
+      <!-- Primary action on the far right -->
+      <button
+        *ngIf="user"
+        mat-flat-button
+        type="button"
+        color="primary"
+        (click)="createOA()"
+        [disabled]="busy">
+        Create
+      </button>
+    </div>
+
+    <!-- If no user yet, show the finder search -->
+    <ng-container *ngIf="!user; else selectedUserBlock">
+      <oa-user-search
+        [searchTerm]="searchTerm"
+        [searching]="searching"
+        [searchError]="searchError"
+        [showResults]="showResults"
+        [results]="results"
+        [moreAvailable]="moreAvailable"
+        (searchTermChange)="searchTerm = $event"
+        (searchRequested)="searchUsers()"
+        (clearRequested)="clearSearch()"
+        (loadMoreRequested)="loadMore()"
+        (userSelected)="selectUser($event)">
+      </oa-user-search>
+    </ng-container>
+
+    <!-- When we have a selected user (from search or entity context) -->
+    <ng-template #selectedUserBlock>
+
+      <mat-progress-bar
+        *ngIf="loadingUser"
+        mode="indeterminate"
+        class="oa-spinner">
+      </mat-progress-bar>
+
+      <div *ngIf="error" class="oa-alert oa-alert--error">
+        {{ error }}
+      </div>
+
+      <oa-user-shell
+        *ngIf="!loadingUser && !error"
+        [user]="user"
+        [selectedUserId]="selectedUserId"
+        [busy]="busy"
+        [actionStatus]="actionStatus"
+        [lastProxyResponse]="lastProxyResponse"
+        [showDebugPanel]="showDebugPanel"
+        [displayName]="displayName()"
+        [email]="getEmail() || null"
+        [userGroup]="getUserGroupDisplay()"
+        [expiry]="getExpiryDisplay()"
+        [oaUsername]="oaUsernameDisplay"
+        (create)="createOA()"
+        (sync)="syncOA()"
+        (verify)="verifyOA()"
+        (reload)="reload()"
+        (newSearch)="newSearch()">
+      </oa-user-shell>
+
+    </ng-template>
+
+  </section>
+</div>

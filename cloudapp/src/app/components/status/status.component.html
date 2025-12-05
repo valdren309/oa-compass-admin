@@ -1,0 +1,32 @@
+<mat-card class="oa-status-card">
+
+  <mat-card-header>
+    <mat-card-title class="oa-status-title">
+      OpenAthens Status
+    </mat-card-title>
+  </mat-card-header>
+
+  <mat-card-content>
+
+    <!-- Current status line -->
+    <div class="oa-status-line">
+      <span class="oa-status-value">
+        {{ actionStatus || '—' }}
+      </span>
+
+      <span *ngIf="busy" class="oa-status-busy">
+        (working…)
+      </span>
+    </div>
+
+    <!-- Debug summary lines (non-expanded) -->
+    <div *ngIf="lastProxyResponse" class="oa-status-summary">
+      Last proxy response available.
+    </div>
+
+    <!-- Optional full debug panel (expanded in user-shell only) -->
+    <ng-content></ng-content>
+
+  </mat-card-content>
+
+</mat-card>

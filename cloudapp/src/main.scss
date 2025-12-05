@@ -1,0 +1,108 @@
+// src/main.scss
+
+@import './app/main/main.component.theme';
+
+/**
+ * Themed component styles
+ * -----------------------
+ * The Cloud App SDK calls this mixin with the current Alma theme.
+ * Keep this as-is so main.component.theme.scss can style things per-theme.
+ */
+@mixin themed-styles($theme, $typography) {
+  @include main-component-theme($theme, $typography);
+}
+
+/**
+ * Global styles
+ * -------------
+ * This mixin is applied as global CSS inside the Cloud App iframe.
+ * Use it for layout/theming fixes that must override Alma/MDC defaults.
+ */
+@mixin global-styles {
+
+  /***************************************************************
+   * 1. Search field: prevent floating label clipping
+   ***************************************************************/
+  .oa-user-search-root .oa-search-field.mat-mdc-form-field {
+    height: auto;
+    min-height: 56px; // Material filled text-field spec
+  }
+
+  .oa-user-search-root .oa-search-field .mat-mdc-text-field-wrapper {
+    overflow: visible;
+    min-height: 56px;
+  }
+
+  .oa-user-search-root .oa-search-field .mat-mdc-form-field-flex {
+    min-height: 56px;
+    align-items: center;
+  }
+
+  .oa-user-search-root .oa-search-field .mat-mdc-form-field-infix {
+    padding-top: 16px;
+    padding-bottom: 10px;
+  }
+
+  .oa-user-search-root .oa-search-field .mdc-floating-label,
+  .oa-user-search-root .oa-search-field .mat-mdc-floating-label {
+    line-height: 1.4;
+  }
+
+  /***************************************************************
+   * 2. Config view: field spacing + opaque selects
+   *
+   * These overrides are scoped to the OA Config card so we don't
+   * interfere with Alma or other Cloud Apps.
+   ***************************************************************/
+
+  /* Make form fields in Config tall enough for floating labels */
+  .oa-config-root .mat-mdc-form-field {
+    height: auto;
+    min-height: 56px;
+  }
+
+  .oa-config-root .mat-mdc-text-field-wrapper {
+    overflow: visible;
+    min-height: 56px;
+    background-color: var(--oa-card);
+    border-radius: 4px;
+    border: 1px solid var(--oa-border);
+  }
+
+  .oa-config-root .mat-mdc-form-field-flex {
+    min-height: 56px;
+    align-items: center;
+  }
+
+  .oa-config-root .mat-mdc-form-field-infix {
+    padding-top: 16px;
+    padding-bottom: 10px;
+  }
+
+  /* Ensure the select trigger looks like a solid field */
+  .oa-config-root .mat-mdc-select-trigger {
+    background-color: var(--oa-card);
+  }
+
+  /* Opaque dropdown panel for Config selects */
+  .oa-config-select-panel {
+    background-color: var(--eca-surface, #ffffff);
+    border: 1px solid var(--oa-border);
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+  }
+}
+
+  /***************************************************************
+   * 3. Global select panel: make dropdown options opaque
+   *
+   * Scoped to the Cloud App iframe only, so this won't affect Alma
+   * itself. This fixes the transparent background on all mat-select
+   * panels in the app (Config + Settings).
+   ***************************************************************/
+  .mat-mdc-select-panel {
+    background-color: var(--eca-surface, #ffffff) !important;
+    border: 1px solid var(--oa-border);
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+  }

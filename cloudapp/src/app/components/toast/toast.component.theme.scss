@@ -1,0 +1,7 @@
+@use '@angular/material' as mat;
+
+/// Theming hook for OA Config Component.
+/// Colors/typography should be driven by the Alma Material theme.
+@mixin toast-theme($theme) {
+  // Intentionally minimal for now; hook for future theming pass.
+}
