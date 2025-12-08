@@ -1,3 +1,4 @@
+<!-- src/app/components/user-info/user-info.component.html -->
 <section class="user-info">
   <ng-container *ngIf="user || selectedUserId; else noUser">
     <div class="user-header">
@@ -7,36 +8,47 @@
           {{ displayName || (user?.first_name + ' ' + user?.last_name) || '—' }}
         </div>
         <div class="user-id">
-          Alma ID: {{ user?.primary_id || selectedUserId || '—' }}
+          {{ 'oa.userInfo.almaIdLabel' | translate }}
+          {{ user?.primary_id || selectedUserId || '—' }}
         </div>
       </div>
 
       <!-- Right side: OA Username (optional) -->
       <div class="oa-block" *ngIf="oaUsername">
-        <div class="label">OA Username</div>
+        <div class="label">
+          {{ 'oa.userInfo.oaUsernameLabel' | translate }}
+        </div>
         <div class="val">{{ oaUsername }}</div>
       </div>
     </div>
 
     <div class="user-details">
       <div class="item">
-        <div class="label">Email</div>
+        <div class="label">
+          {{ 'oa.userInfo.emailLabel' | translate }}
+        </div>
         <div class="val">{{ email || '—' }}</div>
       </div>
 
       <div class="item">
-        <div class="label">User group</div>
+        <div class="label">
+          {{ 'oa.userInfo.userGroupLabel' | translate }}
+        </div>
         <div class="val">{{ userGroup || '—' }}</div>
       </div>
 
       <div class="item">
-        <div class="label">Expiry</div>
+        <div class="label">
+          {{ 'oa.userInfo.expiryLabel' | translate }}
+        </div>
         <div class="val">{{ expiry || '—' }}</div>
       </div>
     </div>
   </ng-container>
 
   <ng-template #noUser>
-    <p class="no-user">No user selected.</p>
+    <p class="no-user">
+      {{ 'oa.userInfo.noUserSelected' | translate }}
+    </p>
   </ng-template>
 </section>

@@ -2,7 +2,7 @@
 
 <mat-card class="settings-card">
   <mat-card-title class="settings-title-row">
-    <span>OA Compass settings</span>
+    <span>{{ 'oa.settings.title' | translate }}</span>
     <span class="settings-title-spacer"></span>
   </mat-card-title>
 
@@ -19,22 +19,27 @@
 
       <!-- OA username storage (institution-level, read-only) -->
       <section class="settings-section">
-        <h3 class="settings-section__title">OA username storage</h3>
+        <h3 class="settings-section__title">
+          {{ 'oa.settings.usernameStorageTitle' | translate }}
+        </h3>
         <p class="settings-section__help">
-          These settings are configured at the institution level in the
-          <strong>Configuration</strong> view and apply to all OA Compass users.
+          {{ 'oa.settings.usernameStorageHelp' | translate }}
         </p>
 
         <div class="settings-grid">
           <div class="settings-select">
-            <div class="settings-select__label">Primary field</div>
+            <div class="settings-select__label">
+              {{ 'oa.settings.primaryFieldLabel' | translate }}
+            </div>
             <div class="settings-select__box">
               {{ settings.oaPrimaryField || 'job_description' }}
             </div>
           </div>
 
           <div class="settings-select">
-            <div class="settings-select__label">Secondary field</div>
+            <div class="settings-select__label">
+              {{ 'oa.settings.secondaryFieldLabel' | translate }}
+            </div>
             <div class="settings-select__box">
               {{ settings.oaSecondaryField || 'none' }}
             </div>
@@ -44,16 +49,18 @@
 
       <!-- Display options (per-user) -->
       <section class="settings-section">
-        <h3 class="settings-section__title">Display options</h3>
+        <h3 class="settings-section__title">
+          {{ 'oa.settings.displayOptionsTitle' | translate }}
+        </h3>
         <p class="settings-section__help">
-          These options only affect your view of the OA Compass Admin app.
+          {{ 'oa.settings.displayOptionsHelp' | translate }}
         </p>
 
         <mat-checkbox
           [(ngModel)]="settings.showDebugPanel"
           name="showDebugPanel"
           (change)="toggleDebug()">
-          Show debug / proxy response panel
+          {{ 'oa.settings.showDebugPanelLabel' | translate }}
         </mat-checkbox>
       </section>
 
@@ -64,7 +71,7 @@
           type="button"
           (click)="resetToDefaults()"
           [disabled]="saving || loading">
-          Reset
+          {{ 'oa.actions.reset' | translate }}
         </button>
 
         <span class="settings-actions__spacer"></span>
@@ -75,14 +82,14 @@
           type="button"
           (click)="save()"
           [disabled]="saving || loading">
-          Save
+          {{ 'oa.actions.save' | translate }}
         </button>
       </div>
 
       <!-- Messages -->
       <div class="settings-messages">
         <span *ngIf="saved" class="settings-success">
-          Settings saved.
+          {{ 'oa.settings.savedMessage' | translate }}
         </span>
         <span *ngIf="error" class="settings-error">
           {{ error }}

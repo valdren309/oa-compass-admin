@@ -1,3 +1,4 @@
+// src/app/components/toast/toast.component.ts
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 
 export type ToastType = 'info' | 'success' | 'warning' | 'error';

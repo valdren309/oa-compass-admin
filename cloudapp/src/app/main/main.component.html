@@ -6,8 +6,8 @@
     [settingsOpen]="showSettings"
     [useEntityContext]="useEntityContext"
     [entityContextUserId]="entityContextUserId"
-    [statusText]="actionStatus || 'User not loaded'"
-    [busy]="busy"
+    [statusText]="actionStatus || ('oa.header.statusUserNotLoaded' | translate)"
+    [busy]="(busy$ | async) ?? false"
     (toggleSettings)="toggleSettings()"
     (toggleConfig)="toggleConfig()">
   </oa-app-header>
@@ -32,34 +32,48 @@
     <!-- Action buttons row (Cloud App style: mat-flat-button, primary on the right) -->
     <div class="eca-actions oa-actions-row">
       <!-- Neutral / secondary actions first -->
+      <!-- Reset -->
       <button
         mat-flat-button
         type="button"
         color="secondary"
         (click)="onReset()"
-        [disabled]="busy">
-        Reset
+        [disabled]="(busy$ | async)">
+        {{ 'oa.actions.reset' | translate }}
       </button>
 
+      <!-- Resend -->
+      <button
+        *ngIf="user"
+        mat-flat-button
+        type="button"
+        color="secondary"
+        (click)="resendActivation()"
+        [disabled]="(busy$ | async)">
+        {{ 'oa.actions.resend' | translate }}
+      </button>
+
+      <!-- Sync -->
       <button
         *ngIf="user"
         mat-flat-button
         type="button"
         color="secondary"
         (click)="syncOA()"
-        [disabled]="busy">
-        Sync
+        [disabled]="(busy$ | async)">
+        {{ 'oa.actions.sync' | translate }}
       </button>
 
       <!-- Primary action on the far right -->
+       <!-- Create -->
       <button
         *ngIf="user"
         mat-flat-button
         type="button"
         color="primary"
         (click)="createOA()"
-        [disabled]="busy">
-        Create
+        [disabled]="(busy$ | async)">
+        {{ 'oa.actions.create' | translate }}
       </button>
     </div>
 
@@ -97,9 +111,9 @@
         *ngIf="!loadingUser && !error"
         [user]="user"
         [selectedUserId]="selectedUserId"
-        [busy]="busy"
+        [busy]="(busy$ | async) ?? false"
         [actionStatus]="actionStatus"
-        [lastProxyResponse]="lastProxyResponse"
+        [lastProxyResponse]="(lastProxyResponse$ | async) ?? ''"
         [showDebugPanel]="showDebugPanel"
         [displayName]="displayName()"
         [email]="getEmail() || null"
@@ -108,7 +122,6 @@
         [oaUsername]="oaUsernameDisplay"
         (create)="createOA()"
         (sync)="syncOA()"
-        (verify)="verifyOA()"
         (reload)="reload()"
         (newSearch)="newSearch()">
       </oa-user-shell>

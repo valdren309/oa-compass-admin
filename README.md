@@ -8,12 +8,11 @@ The app supports:
 
 * Searching & selecting Alma users (entity-aware)
 * Viewing Alma user details
-* Generating & normalizing OpenAthens usernames
+* Creating and managing OpenAthens accounts (using OA-generated usernames)
 * Verifying, creating, modifying, and resending OA accounts
 * Writing back OA username into Alma user identifiers
 * Group → permission mapping enforced by the secure backend
 * Full Alma theming & Cloud App style compliance
-* Safe configuration & user-level settings pages
 
 Sensitive OA operations occur **only in the Node.js proxy**.
 **No secrets ever reach the browser.**
@@ -45,15 +44,20 @@ Sensitive OA operations occur **only in the Node.js proxy**.
 
 # **1. Purpose & Goals**
 
-OA Compass Admin provides a **secure and modern workflow** for managing OpenAthens (Compass) accounts for Alma users.
+### Goals
 
-Legacy tools had major issues:
+1. Replace the legacy PHP OA provisioning tool with a **secure, maintainable Alma Cloud App**.
+2. Ensure **all OpenAthens (OA)** calls go through a **Node.js proxy**, with **no secrets in the Cloud App**.
+3. Provide a librarian-facing UI to:
+   - Inspect Alma users
+   - Create/sync/verify OA accounts
+   - Push the OA username back into Alma identifiers
+4. Fully align with:
+   - Alma **Cloud App SDK** patterns
+   - Cloud App **styling + theming** tutorials
+   - Type-safe, service-based Angular architecture
+5. Rely on **OA-generated usernames**, and **write them back into Alma** using configurable fields (identifier, job description, user note).
 
-* Exposed OA API secrets
-* Sent PII over the open web
-* Lacked access controls
-* Could not integrate safely with Alma
-* Hard-coded username logic was error-prone
 
 This rewrite:
 
@@ -163,122 +167,193 @@ This rewrite:
 
 # **4. Frontend Design**
 
-The frontend is a modular Angular Alma Cloud App built using the **Ex Libris CloudApp SDK**, with strict separation between UI, Alma logic, and OA workflows.
+The frontend is a modular Angular Alma Cloud App built using the **Ex Libris CloudApp SDK**, with a strict separation between:
 
-### **Core Components**
+* **UI components**
+* **Alma business logic**
+* **OpenAthens workflow orchestration**
+* **Application state management**
+* **Internationalization (i18n)**
 
-- `oa-app-header` — Unified header with busy indicator, status text, settings/config icons  
-- `oa-user-search` — Full Alma user search (ID, name, email, barcode), paginated  
-- `oa-user-shell` — Entire user display environment (info, OA actions, debug)  
-- `user-info` — User demographic + group + expiry display  
-- `oa-status` — Shows last OA operation status / errors  
-- `provision` (merged into `oa-user-shell`) — Create / Sync / Verify / Resend  
-- `toast` — Alma Cloud App–style ephemeral alerts  
-- `settings` — Per-user Cloud App preferences  
-- `config` — **Institution-level settings** (proxy URL, OA identifier type, write-back fields)
-
-### **Core Services**
-
-- `AlmaUserService`  
-  - Strict typed GET/PUT  
-  - Identifier normalization  
-  - OA write-back logic (job description, identifier, user note)
-
-- `OAProxyService`  
-  - Typed calls to the Node proxy  
-  - Create, modify, verify, resend  
-  - **Does NOT generate usernames—OA generates them**
-
-- `EntityContextService`  
-  - Watches Alma "User" entity context  
-  - Auto-loads users when launched from Alma User pages  
-
-- `StateService` (optional future)  
-  - Central reactive store (Phase 5+ if needed)
-
-- `CloudAppSettingsService` & `CloudAppConfigService`  
-  - Persist user-level preferences  
-  - Persist global institution-level configuration
-
-### **Routing**
-
-- `/` — Main UI  
-  - Search mode  
-  - Entity-context mode  
-  - User actions (Create / Sync / Verify / Resend)
-
-- `/settings` — Per-user Cloud App preferences  
-  - Debug panel default state  
-  - Search behavior (future)
-
-- `/config` — **Admin-only institution configuration**  
-  - Proxy base URL  
-  - OA identifier type  
-  - Primary/secondary write-back fields  
-  - (Future) policy mapping
+All visible UI text is externalized through the Cloud App translation system (`CloudAppTranslateModule`) using JSON files under `assets/i18n/`.
 
 ---
 
-ChatGPT said:
-# **5. Backend Proxy Design**
+## **Core Components**
 
-The Node.js proxy is the **only component** that communicates with the **OpenAthens Admin API**.  
-All OA credentials, tenant identifiers, and sensitive logic remain **server-side only**.
+* **`oa-app-header`**
+  Unified top bar showing OA status text, busy indicator, and settings/config buttons; fully localized.
 
-This ensures:
-- Zero exposure of OA secrets in the browser
-- Full control over input validation and security
-- Consistent, normalized OA behavior across all institutions
+* **`oa-user-search`**
+  Full Alma user search (ID, name, email, barcode) with paging and debounced input; all strings translated.
 
-### **What the Proxy Owns**
+* **`oa-user-shell`**
+  Primary container for a selected user:
 
-- **OA Admin API key**  
-- **OA base URL** (`OA_BASE_URL`)  
-- **OA tenant / organization ID** (`OA_TENANT`)  
-- **Group/permission-set mapping logic**  
-- **All username handling**  
-  - OA now generates usernames  
-  - Proxy no longer constructs or prefixes usernames  
-- **CORS enforcement**  
-- **Server-side validation of all OA requests**
+  * `user-info` panel
+  * OA provisioning controls
+  * Debug panel (optional, user-toggleable)
 
-The Cloud App only sends the minimum required fields:  
-`email`, `first_name`, `last_name`, `expires`, and `alma_group_code/key`.
+* **`user-info`**
+  Clean display of Alma demographics, group, expiry, and OA username (derived via AlmaUserService).
 
-### **Proxy Features (Updated for Phase 4)**
+* **`oa-status`**
+  Displays current OA action status and messages (now driven by i18n + `StateService`).
 
-- **Strict CORS allowlist** to limit who can call the proxy  
-- **Zero username logic on the Cloud App**  
-  - Username is no longer required in create payload  
-  - OA fully generates the username  
-  - Proxy returns the OA-generated username to the Cloud App  
-- **Policy mapping** based on Alma user group  
-- **Error sanitization** for safe client-side display  
-- **No sensitive information returned to browser**  
-- **Full hardening of OA request payloads**  
-- **Audit-safe logs** (no API keys or PII logged)
+* **`oa-provision`**
+  Action button bar for OA workflows.
+  *Verify has been removed (redundant with Sync).*
 
-### **Proxy Endpoints (No Change to URL Paths)**
-GET /health → Proxy status check
-GET /env → Safe diagnostic info (never secrets)
+* **`toast`**
+  Alma Cloud App–style ephemeral notifications.
 
-POST /v1/oa/users/verify → Check OA account existence
-POST /v1/oa/users/get → Retrieve OA account details
-POST /v1/oa/users/create → Create OA account (OA generates username)
-POST /v1/oa/users/modify → Update attributes or group/permission policy
-POST /v1/oa/users/resend-activation → Reset to pending + resend email
+* **`settings`**
+  Per-user Cloud App preferences (currently debug panel visibility).
 
-### **Important Notes for Phase 4**
+* **`config`**
+  **Institution-level configuration**: proxy base URL, OA identifier type, primary/secondary storage fields.
 
-- The **Cloud App no longer provides `username`** to `create`.  
-  The proxy must accept create requests **without username**.
+---
 
-- The OA Admin API **supports omitting the username**, allowing OA to autogenerate one.
+## **Core Services**
 
-- After creation, the proxy returns:
-  - `summary.username` (OA-generated)
-  - Additional create metadata  
-  - Cloud App writes this username back to Alma as configured.
+* **`AlmaUserService`**
+
+  * Typed GET/PUT for Alma user endpoints
+  * Identifier normalization
+  * Username extraction helpers
+  * **Centralized OA username write-back logic**
+  * Validation helpers (`validateUserForOA`), now used by workflow service
+
+* **`OAProxyService`**
+
+  * Typed, HTTPS-enforced calls to the hardened Node proxy
+  * `get`, `createAccount`, `modifyAccount`, `resendActivation`
+  * Error normalization
+  * *Does not generate usernames—OA does.*
+
+* **`OAWorkflowService`** *(Phase 6 addition)*
+
+  * **Primary orchestrator** for Create + Sync + Resend workflows
+  * Builds payloads, handles OA/Alma sequencing, reload triggers
+  * Translates all status messages through i18n
+  * Produces structured workflow results consumed by MainComponent
+
+* **`EntityContextService`**
+
+  * Watches Alma “User” entity context
+  * Enables seamless “Option A” mode when invoked from Alma User pages
+
+* **`StateService`** *(Phase 6 addition)*
+
+  * Central reactive application state
+  * `busy$`, `lastProxyResponse$`, and selected user signals
+  * Reduces MainComponent complexity and synchronizes UI state across components
+
+* **`CloudAppSettingsService` / `CloudAppConfigService`**
+
+  * Persist user-level vs institution-level settings separately
+  * Used during startup to initialize UI/preferences
+
+---
+
+## **Internationalization (i18n)**
+
+All user-visible strings are externalized into:
+
+```
+/assets/i18n/en.json
+```
+
+The app bootstraps translation via:
+
+```ts
+CloudAppTranslateModule.forRoot()
+translate.use('en')
+```
+
+Components rely on:
+
+* `{{ 'oa.some.key' | translate }}`
+* `translate.instant('oa.key', { params })` in workflow/services
+
+Debug output stays raw for diagnostic value (per project rules).
+
+---
+
+## **Routing**
+
+* **`/` — Main UI**
+
+  * Search mode
+  * Entity-context mode
+  * OA actions (Create / Sync)
+  * Debug panel (optional)
+
+* **`/settings` — Per-user preferences**
+
+  * Debug panel default state
+
+* **`/config` — Institution-level configuration**
+
+  * Proxy base URL
+  * OA identifier type code
+  * Primary/secondary OA username write-back fields
+  * Future extensibility for policy mapping
+
+---
+
+### **5. Node Proxy Architecture (Updated for Phase 6 Modularization)**
+
+The OA Compass Admin Proxy is a secure Node.js service that mediates all communication between the Cloud App and the OpenAthens Admin API. As of Phase 6, the proxy has been modularized for clarity, maintainability, and improved security auditing.
+
+### **5.1 Core Principles**
+
+* All secrets remain server-side (OA API key, tenant, base URL).
+* All Cloud App → OA requests flow **exclusively** through the proxy.
+* The proxy exposes a stable, minimal set of endpoints defined in the CCR.
+* Request validation, CORS control, and error normalization are now centralized.
+
+### **5.2 File Structure**
+
+The proxy now consists of the following modules:
+
+```
+server/
+  server.js               → Minimal entrypoint, wires HTTP server + routing
+  config.js               → Loads validated environment variables
+  cors.js                 → Origin validation + Access-Control headers
+  oa-client.js            → Low-level OA HTTPS helpers (GET/POST)
+  validators.js           → Input validation helpers for create/modify
+  routes/
+    users.js              → Handlers for all /v1/oa/users/* endpoints
+  package.json
+  .env                    → Deployment-only environment file (not committed)
+
+### **5.3 Request Flow**
+
+1. Cloud App calls OAProxyService → `https://yourproxy/...`.
+2. `server.js` checks CORS and dispatches request.
+3. `routes/users.js` parses JSON (200 KB limit) and performs validation.
+4. OA HTTPS calls are made through `oa-client.js`.
+5. Outputs are normalized into the canonical proxy error/success structure.
+
+### **5.4 Standardized Error Shape**
+
+All non-2xx OA responses return:
+
+```
+{
+  "error": "OA create failed",
+  "code": "OA_ERROR_CODE",   // if provided
+  "message": "Descriptive message",
+  "status": 400
+}
+```
+
+### **5.5 Behavior Preservation Guarantee**
+
+The Phase 6 modularization does **not change** any functional behavior: existing front-end components and workflows continue to function identically.
 
 ---
 
@@ -367,10 +442,15 @@ This app follows **all** principles from:
 │ config.json
 │
 ├── server/
-│ ├── server.js
-│ ├── package.json
-│ ├── .env # Not committed; stored only on deployment server
-│ └── (optional future files: group-map.js, logs/)
+│   ├── server.js          # Minimal HTTP entrypoint + routing
+│   ├── config.js          # Loads env vars, validates OA/port/origin settings
+│   ├── cors.js            # CORS allowlist + headers
+│   ├── oa-client.js       # Low-level OA HTTPS helpers
+│   ├── validators.js      # Input validation helpers (create/modify payloads)
+│   ├── routes/
+│   │   └── users.js       # /v1/oa/users/* handlers (verify/get/create/modify/resend)
+│   ├── package.json
+│   └── .env               # Not committed; stored only on deployment server
 │
 └── src/
 ├── main.scss # Global theme + overrides injected by Cloud App host
@@ -452,7 +532,7 @@ A full version exists in `SDD.md`.
 
 ### **Algorithms**
 
-* Username normalization
+* OA username handling & Alma write-back (OA-generated username → Alma fields)
 * OA account resolution (identifier → email → primary ID)
 * Alma full-record PUT updates
 * Group mapping via proxy policies
@@ -472,17 +552,33 @@ See `CCR.md` for authoritative definitions.
 
 ### **Registered Functions**
 
-* Alma: `getUser`, `updateUserIdentifiers`, `writeBackOAUsernameBoth`
-* OA: `verify`, `createAccount`, `modifyAccount`, `resendActivation`, `getEnv`
+* Alma:
+  * `getUser`
+  * `updateUserIdentifiers`
+  * `writeBackOAUsernameBoth`
+
+* OA (via OAProxyService):
+  * `verify`
+  * `createAccount`
+  * `modifyAccount`
+  * `resendActivation`
+  * `getAccount` (wrapper for `/v1/oa/users/get`)
 
 ### **Config Items**
 
-* `OA_BASE_URL`
-* `OA_TENANT`
-* `OA_API_KEY`
-* `OA_USERNAME_PREFIX`
-* `ALLOWED_ORIGINS`
-* `GROUP_MAP`
+* Proxy environment (Node `.env` or systemd env vars):
+  * `OA_BASE_URL`
+  * `OA_TENANT`
+  * `OA_API_KEY`
+  * `OA_CREATE_URL`
+  * `ALLOWED_ORIGINS`
+  * `GROUP_MAP` / `CODE_TO_KEY`
+
+* Cloud App configuration (via CloudAppConfigService):
+  * `proxyBaseUrl`
+  * `oaIdTypeCode`
+  * `oaPrimaryField`
+  * `oaSecondaryField`
 
 ---
 

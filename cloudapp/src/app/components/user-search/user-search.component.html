@@ -8,13 +8,15 @@
         mode="indeterminate"
         diameter="40">
       </mat-progress-spinner>
-      <div class="loading-label">Searching…</div>
+      <div class="loading-label">
+        {{ 'oa.search.searching' | translate }}
+      </div>
     </div>
   </div>
 
   <!-- Search input -->
   <mat-form-field class="oa-search-field" appearance="fill">
-    <mat-label>Search by name, ID, email, barcode…</mat-label>
+    <mat-label>{{ 'oa.search.placeholder' | translate }}</mat-label>
     <input
       matInput
       type="text"
@@ -28,7 +30,7 @@
     <button
       matSuffix
       mat-icon-button
-      aria-label="Search"
+      [attr.aria-label]="'oa.search.searchButton' | translate"
       (click)="onSearchClick()"
       [disabled]="searching || !searchTerm.trim()">
       <mat-icon>search</mat-icon>
@@ -45,7 +47,7 @@
     <mat-card *ngIf="results?.length; else emptyList" class="results-card">
       <mat-card-header class="results-header">
         <mat-card-title class="results-title">
-          Results ({{ results.length }})
+          {{ 'oa.search.resultsWithCount' | translate:{ count: results.length } }}
         </mat-card-title>
 
         <button
@@ -53,7 +55,7 @@
           type="button"
           (click)="onLoadMoreClick()"
           [disabled]="searching || !moreAvailable">
-          Load more
+          {{ 'oa.search.loadMore' | translate }}
         </button>
       </mat-card-header>
 
@@ -71,7 +73,7 @@
                   {{ r.first_name }} {{ r.last_name }}
                 </div>
                 <div class="result-meta">
-                  ID: {{ r.primary_id }}
+                  {{ 'oa.search.idLabel' | translate }} {{ r.primary_id }}
                 </div>
               </div>
             </div>
@@ -82,7 +84,7 @@
 
     <ng-template #emptyList>
       <div class="empty-results">
-        No matching users found.
+        {{ 'oa.search.emptyResults' | translate }}
       </div>
     </ng-template>
   </section>

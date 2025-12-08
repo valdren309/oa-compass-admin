@@ -118,20 +118,89 @@ getActiveEntity(): AlmaEntityUser | null
 
 ---
 
-## **2.4 `StateService`** *(optional; introduced Phase 4)*
+## **2.4 New Service: OAWorkflowService**
 
-### Methods (canonical)
+### **Status:** Canonical (Phase 6)
+
+### **Allowed Class Name:** `OAWorkflowService`
+
+### **Purpose:** Orchestrates all OA workflows (create, sync), combining logic from Alma and OA proxy layers.
+
+### **Allowed Public Methods:**
 
 ```ts
-setUser(user: AlmaUser | null): void
-getUser(): Observable<AlmaUser | null>
-
-setBusy(isBusy: boolean): void
-getBusy(): Observable<boolean>
-
-setLastProxyResponse(text: string): void
-getLastProxyResponse(): Observable<string>
+resendActivationWorkflow(
+    user: AlmaUser | null,
+    selectedUserId: string | null
+): Promise<OAWorkflowResult>
 ```
+
+```ts
+createAccountWorkflow(
+  user: AlmaUser | null,
+  selectedUserId: string | null,
+  oaIdTypeCode: string,
+  primaryField: OAUsernameField,
+  secondaryField: OASecondaryField
+): Promise<OAWorkflowResult>;
+```
+
+```ts
+syncAccountWorkflow(
+  user: AlmaUser | null,
+  selectedUserId: string | null,
+  oaIdTypeCode: string,
+  primaryField: OAUsernameField,
+  secondaryField: OASecondaryField
+): Promise<OAWorkflowResult>;
+```
+
+### **Canonical Types:**
+
+```ts
+interface OAWorkflowResult {
+  statusText: string;
+  proxyDebugText?: string;
+  oaUsername?: string;
+  needsReload: boolean;
+}
+```
+
+### **Notes:**
+
+* Verify flow is deprecated; Sync now covers verification behavior.
+* Workflow service must not alter lower‑level Alma or OA service contracts.
+
+---
+
+## **2.5 New Service: StateService**
+
+### **Status:** Canonical (Phase 6)
+
+### **Allowed Class Name:** `StateService`
+
+### **Purpose:** Central reactive state container for selected user, busy flag, and proxy debug output.
+
+### **Allowed Public Methods:**
+
+```ts
+setUser(user: AlmaUser | null): void;
+getUser(): Observable<AlmaUser | null>;
+
+setBusy(isBusy: boolean): void;
+getBusy(): Observable<boolean>;
+
+setLastProxyResponse(text: string): void;
+getLastProxyResponse(): Observable<string>;
+```
+
+### **Notes:**
+
+* All UI components should bind to `busy` and `lastProxyResponse` via this service.
+* No side‑effects or business logic allowed.
+
+---
+
 
 ---
 
@@ -221,6 +290,17 @@ export interface OAGetResponse {
   // If the proxy normalizes or echoes a username hint, it appears here.
   normalizedUsername?: string;
 }
+
+  export interface OAResendRequest {
+      username?: string;
+      email?: string;
+  }
+
+  export interface OAResendResponse {
+      sent: boolean;
+      message?: string;
+      raw?: any;
+  }
 ```
 
 **Notes:**
@@ -407,3 +487,121 @@ These names must **never** be changed in the TypeScript / Node codebase:
   * `/health`
 
 The previous hard-coded constant `OA_ID_TYPE = "02"` and `OA_USERNAME_PREFIX` are no longer part of the canonical registry; OA ID type and any username prefixing behavior are now driven by configuration and/or the upstream OpenAthens platform rather than fixed code constants.
+
+### **8.1 Modules and Exports**
+
+#### **config.js**
+
+Exports:
+
+```
+PORT: number
+ALLOWED_ORIGINS: string[]
+OA_BASE_URL: string
+OA_TENANT: string
+OA_API_KEY: string
+OA_USERNAME_PREFIX: string
+OA_CREATE_URL: string
+GROUP_MAP: Record<string, {...}>
+CODE_TO_KEY: Record<string, string>
+```
+
+#### **cors.js**
+
+```
+setCors(req, res, allowedOrigins): void
+```
+
+#### **oa-client.js**
+
+```
+httpPostJsonWithKey(url, apiKey, payload, contentType?): Promise<{status, body}>
+httpGetJsonWithKey(url, apiKey): Promise<{status, body}>
+normalizeUsername(username): string
+queryAccount({ username, email }): Promise<{status, body}>
+resolveAccountIdOrThrow({ openathensId, username, email }): Promise<string>
+```
+
+#### **validators.js**
+
+```
+isValidEmail(email: string): boolean
+isValidDateYYYYMMDD(str: string): boolean
+validateCreatePayload(body: any): {
+  ok: boolean,
+  errors?: Record<string,string>,
+  normalized: {
+    email: string,
+    first_name: string,
+    last_name: string,
+    expires: string,
+    password?: string,
+    alma_group_key?: string,
+    alma_group_code?: string,
+    status: 'pending' | 'active' | 'suspended'
+  }
+}
+```
+
+#### **routes/users.js**
+
+```
+handleHealth(req, res): void
+handleVerify(req, res): Promise<void>
+handleGetAccount(req, res): Promise<void>
+handleCreate(req, res): Promise<void>
+handleModify(req, res): Promise<void>
+handleResendActivation(req, res): Promise<void>
+```
+
+Helper exports:
+
+```
+sendJson(res, status, obj): void
+readJsonBody(req): Promise<any>
+derivePolicy({ alma_group_key, alma_group_code }): Policy | null
+sendOAError(res, oaStatus, oaBody): void
+checkRequiredEnv(vars: string[]): { ok: boolean, missing: string[] }
+```
+
+#### **server.js**
+
+```
+// No exports (entrypoint only)
+Creates HTTP server
+Registers CORS + OPTIONS handler
+Routes requests to routes/users.js
+```
+
+### **8.2 Canonical OA Proxy Endpoints**
+
+All endpoints are **POST** unless specified.
+
+```
+GET /health
+POST /v1/oa/users/verify
+POST /v1/oa/users/get
+POST /v1/oa/users/create
+POST /v1/oa/users/modify
+POST /v1/oa/users/resend-activation
+```
+
+Response formats are preserved exactly from pre‑modularization behavior.
+
+### **8.3 Canonical Error Contract**
+
+All proxy error responses conform to:
+
+```
+{
+  error: string,
+  code: string | null,
+  message: string,
+  status: number
+}
+```
+
+This shape is required for all consumers, including OAWorkflowService.
+
+---
+

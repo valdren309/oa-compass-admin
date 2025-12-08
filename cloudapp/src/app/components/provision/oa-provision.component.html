@@ -1,8 +1,11 @@
+<!-- src/app/components/provision/oa-provision.component.html -->
 <mat-card class="oa-provision">
   <mat-card-header>
-    <mat-card-title>OpenAthens provisioning</mat-card-title>
+    <mat-card-title>
+      {{ 'oa.provision.title' | translate }}
+    </mat-card-title>
     <mat-card-subtitle>
-      Use the actions below to manage this user's OpenAthens account.
+      {{ 'oa.provision.subtitle' | translate }}
     </mat-card-subtitle>
   </mat-card-header>
 
@@ -10,16 +13,6 @@
 
     <!-- Cloud App-style actions row: primary on the right -->
     <div class="eca-actions oa-provision-actions">
-      <!-- Verify (secondary) -->
-      <button
-        mat-flat-button
-        color="secondary"
-        type="button"
-        (click)="onVerifyClick()"
-        [disabled]="busy || !hasTargetUser">
-        Verify
-      </button>
-
       <!-- Sync (secondary) -->
       <button
         mat-flat-button
@@ -27,7 +20,7 @@
         type="button"
         (click)="onSyncClick()"
         [disabled]="busy || !hasTargetUser">
-        Sync
+        {{ 'oa.actions.sync' | translate }}
       </button>
 
       <!-- Create (primary) -->
@@ -37,7 +30,7 @@
         type="button"
         (click)="onCreateClick()"
         [disabled]="busy || !hasTargetUser">
-        Create
+        {{ 'oa.actions.create' | translate }}
       </button>
     </div>
 

@@ -5,6 +5,7 @@ import {
   CloudAppConfigService,
   CloudAppSettingsService,
 } from '@exlibris/exl-cloudapp-angular-lib';
+import { TranslateService } from '@ngx-translate/core';
 import { EntityContextService } from '../services/entity-context.service';
 import {
   OACompassSettings,
@@ -12,15 +13,11 @@ import {
   OAUsernameField,
   OASecondaryField,
 } from '../models/oa-settings.model';
-import {
-  OAGetResponse,
-  OAAccountCreate,
-  OAAccountModify,
-} from '../models/oa-account.model';
 import { AlmaUser, AlmaUserLite } from '../models/alma-user.model';
 import { AlmaUserService } from '../services/alma-user.service';
-import { OAProxyService } from '../services/oa-proxy.service';
 import { firstValueFrom } from 'rxjs';
+import { StateService } from '../services/state.service';
+import { OAWorkflowService } from '../services/oa-workflow.service';
 
 @Component({
   selector: 'app-main',
@@ -66,26 +63,32 @@ export class MainComponent implements OnInit {
   lastSelfLink?: string;
   showResults = false;
   user: AlmaUser | null = null;
-  loading = false;
   loadingUser = false;
   error?: string;
 
   // ==== action state ====
-  busy = false;
+  // busy + lastProxyResponse now come from StateService
+  busy$;
+  lastProxyResponse$;
   actionStatus = '';
-  lastProxyResponse = '';
 
   // ==== OA state ====
+  // Currently not populated anywhere, but kept for forward-compat
   oaUsername: string | null = null;
 
   constructor(
     private rest: CloudAppRestService,
     private config: CloudAppConfigService,
     private settingsService: CloudAppSettingsService,
+    private translate: TranslateService,
     private entityContext: EntityContextService,
-    private oa: OAProxyService,
-    private alma: AlmaUserService
-  ) {}
+    private alma: AlmaUserService,
+    private state: StateService,
+    private oaWorkflow: OAWorkflowService
+  ) {
+    this.busy$ = this.state.getBusy();
+    this.lastProxyResponse$ = this.state.getLastProxyResponse();
+  }
 
   onSettingsChanged(newSettings: OACompassSettings): void {
     this.settings = {
@@ -130,7 +133,7 @@ export class MainComponent implements OnInit {
       this.user = null;
       this.selectedUserId = null;
       this.actionStatus = '';
-      this.lastProxyResponse = '';
+      this.state.setLastProxyResponse('');
 
       this.showSearch = true;
       this.showResults = false;
@@ -220,7 +223,9 @@ export class MainComponent implements OnInit {
       const { items, resp, queryUsed } =
         await this.alma.searchUsersSmart(termRaw, this.currentOffset, this.pageSize);
 
-      if (!items.length) this.searchError = 'No results found.';
+      if (!items.length) {
+        this.searchError = this.translate.instant('oa.search.noResults');
+      }
 
       this.results = items;
       this.lastQueryExpr = queryUsed || this.lastQueryExpr;
@@ -228,7 +233,7 @@ export class MainComponent implements OnInit {
       // Compute whether more pages exist and update offset
       this.setNextLinkFromResponse(resp, items.length);
     } catch (e: any) {
-      this.searchError = e?.message || 'Search failed';
+      this.searchError = e?.message || this.translate.instant('oa.search.error');
     } finally {
       this.searching = false;
     }
@@ -253,7 +258,7 @@ export class MainComponent implements OnInit {
       // Update offset and "has more" flag based on total_record_count
       this.setNextLinkFromResponse(resp, items.length);
     } catch (e: any) {
-      this.searchError = e?.message || 'Load more failed';
+      this.searchError = e?.message || this.translate.instant('oa.search.loadMoreError');
     } finally {
       this.searching = false;
     }
@@ -392,7 +397,7 @@ export class MainComponent implements OnInit {
   selectUser(u: AlmaUserLite) {
     this.selectedUserId = u.primary_id ?? null;
     this.actionStatus = '';
-    this.lastProxyResponse = '';
+    this.state.setLastProxyResponse('');
     this.lastSelfLink = u.link;
 
     // These are mostly legacy flags from when the search UI lived here,
@@ -411,7 +416,7 @@ export class MainComponent implements OnInit {
   // Load / refresh selected user
   async fetchUserByLink(link: string): Promise<void> {
     this.loadingUser = true;
-    this.actionStatus = 'Loading user…';
+    this.actionStatus = this.translate.instant('oa.status.loadingUser');
 
     try {
       const rel = this.toRelative(link);
@@ -422,6 +427,7 @@ export class MainComponent implements OnInit {
       );
 
       this.user = this.alma.normalizeFullUser(data as any);
+      this.state.setUser(this.user);
 
       // Derive OA username from Alma using configured ID type (e.g. "02")
       const idType = (this.oaIdTypeCode || '02').toString();
@@ -431,10 +437,10 @@ export class MainComponent implements OnInit {
       );
 
       this.actionStatus = oaFromAlma
-        ? `User loaded — OA username in Alma: ${oaFromAlma}`
-        : 'User loaded.';
+        ? this.translate.instant('oa.status.userLoadedWithOA', { username: oaFromAlma })
+        : this.translate.instant('oa.status.userLoaded');
     } catch (e: any) {
-      this.actionStatus = e?.message || 'Failed to load user';
+      this.actionStatus = e?.message || this.translate.instant('oa.status.loadFailed');
     } finally {
       this.loadingUser = false;
     }
@@ -442,11 +448,12 @@ export class MainComponent implements OnInit {
 
   async fetchUserByIdNoType(primaryId: string): Promise<void> {
     this.loadingUser = true;
-    this.actionStatus = 'Loading user…';
+    this.actionStatus = this.translate.instant('oa.status.loadingUser');
 
     try {
       const data = await this.alma.getUser(primaryId);
       this.user = this.alma.normalizeFullUser(data as any);
+      this.state.setUser(this.user);
 
       // Derive OA username from Alma using configured ID type (e.g. "02")
       const idType = (this.oaIdTypeCode || '02').toString();
@@ -456,10 +463,10 @@ export class MainComponent implements OnInit {
       );
 
       this.actionStatus = oaFromAlma
-        ? `User loaded — OA username in Alma: ${oaFromAlma}`
-        : 'User loaded.';
+        ? this.translate.instant('oa.status.userLoadedWithOA', { username: oaFromAlma })
+        : this.translate.instant('oa.status.userLoaded');
     } catch (e: any) {
-      this.actionStatus = e?.message || 'Failed to load user';
+      this.actionStatus = e?.message || this.translate.instant('oa.status.loadFailed');
     } finally {
       this.loadingUser = false;
     }
@@ -467,7 +474,7 @@ export class MainComponent implements OnInit {
 
   reload() {
     this.actionStatus = '';
-    this.lastProxyResponse = '';
+    this.state.setLastProxyResponse('');
 
     if (this.lastSelfLink) {
       const url = this.withParam(this.lastSelfLink, '_', Date.now().toString());
@@ -478,12 +485,12 @@ export class MainComponent implements OnInit {
       this.fetchUserByIdNoType(this.selectedUserId);
       return;
     }
-    this.error = 'No user selected to refresh.';
+    this.error = this.translate.instant('oa.status.noUserToRefresh');
   }
 
   private async refreshAlmaUserSilently(): Promise<void> {
     const savedStatus = this.actionStatus;
-    const savedProxy = this.lastProxyResponse;
+    // lastProxyResponse stays as-is during silent refresh
 
     try {
       if (this.lastSelfLink) {
@@ -494,7 +501,6 @@ export class MainComponent implements OnInit {
       }
     } finally {
       this.actionStatus = savedStatus;
-      this.lastProxyResponse = savedProxy;
     }
   }
 
@@ -502,9 +508,10 @@ export class MainComponent implements OnInit {
 
   newSearch() {
     this.user = null;
+    this.state.setUser(null);
     this.selectedUserId = null;
     this.actionStatus = '';
-    this.lastProxyResponse = '';
+    this.state.setLastProxyResponse('');
     this.clearSearch();
     this.showSearch = true;
   }
@@ -539,10 +546,6 @@ export class MainComponent implements OnInit {
     return this.alma.getEmail(this.user);
   }
 
-  private async findOAAccount(): Promise<OAGetResponse | null> {
-    return this.oa.findAccountByAlmaUser(this.user, this.alma);
-  }
-
   /**
    * Load an Alma user based on the Alma entity context (Option A).
    * Reuses the existing fetchUserByIdNoType() logic so behavior
@@ -551,7 +554,7 @@ export class MainComponent implements OnInit {
   private async loadUserFromEntity(primaryId: string): Promise<void> {
     this.selectedUserId = primaryId;
     this.actionStatus = '';
-    this.lastProxyResponse = '';
+    this.state.setLastProxyResponse('');
 
     this.showSearch = false;
     this.showResults = false;
@@ -582,372 +585,92 @@ export class MainComponent implements OnInit {
     return typeof id === 'string' ? id : '';
   }
 
-  private getOAUsernameFromAlmaForStatus(): string | null {
-    if (!this.user) return null;
+  // ---------------------------
+  // OA Resend / Sync / Create (via workflow service)
+  // ---------------------------
 
-    // 1) Prefer OA username from identifiers (canonical store)
-    const fromId = this.alma.getOAUsernameFromIdentifiers(this.user, this.oaIdTypeCode);
-    if (fromId) return fromId;
+    async resendActivation(): Promise<void> {
+    if (!this.user && !this.selectedUserId) return;
 
-    // 2) Fallback: try to parse from job_description (legacy style "OpenAthens: <username>")
-    const u: any = this.user;
-    const jd = (u?.job_description || '').toString();
-    const prefix = 'OpenAthens:';
-    const idx = jd.indexOf(prefix);
-    if (idx !== -1) {
-      const val = jd.slice(idx + prefix.length).trim();
-      if (val) return val;
-    }
+    this.state.setBusy(true);
+    this.actionStatus = this.translate.instant('oa.status.resending');
+    this.state.setLastProxyResponse('');
 
-    // 3) Fallback: try to find "OpenAthens username: <username>" in user_note
-    const notes = (u?.user_note && Array.isArray(u.user_note))
-      ? u.user_note
-      : (u?.user_note ? [u.user_note] : []);
+    try {
+      const result = await this.oaWorkflow.resendActivationWorkflow(
+        this.user,
+        this.selectedUserId
+      );
 
-    for (const n of notes) {
-      const text = (n?.note_text || '').toString();
-      const lower = text.toLowerCase();
-      const marker = 'openathens username:';
-      const idx2 = lower.indexOf(marker);
-      if (idx2 !== -1) {
-        const raw = text.slice(idx2 + marker.length).trim();
-        if (raw) return raw;
+      this.actionStatus = result.statusText;
+
+      if (result.proxyDebugText != null) {
+        this.state.setLastProxyResponse(result.proxyDebugText);
       }
-    }
 
-    return null;
+      if (result.needsReload) {
+        await this.refreshAlmaUserSilently();
+      }
+    } finally {
+      this.state.setBusy(false);
+    }
   }
 
   async createOA(): Promise<void> {
     if (!this.user && !this.selectedUserId) return;
 
-    this.busy = true;
-    this.actionStatus = 'Creating…';
-    this.lastProxyResponse = '';
+    this.state.setBusy(true);
+    this.actionStatus = this.translate.instant('oa.status.creating');
+    this.state.setLastProxyResponse('');
 
     try {
-      // 1) Validate Alma user fields needed for OA
-      const validation = this.alma.validateUserForOA(this.user);
+      const result = await this.oaWorkflow.createAccountWorkflow(
+        this.user,
+        this.selectedUserId,
+        this.oaIdTypeCode,
+        this.settings.oaPrimaryField,
+        this.settings.oaSecondaryField
+      );
 
-      if (!validation.ok) {
-        this.actionStatus =
-          `Create blocked: missing ${validation.missing.join(', ')}`;
-        this.lastProxyResponse =
-          'Alma record lacks required fields for OA create.';
-        return;
+      this.actionStatus = result.statusText;
+      if (result.proxyDebugText != null) {
+        this.state.setLastProxyResponse(result.proxyDebugText);
       }
 
-      const pid = this.user?.primary_id || this.selectedUserId!;
-
-      /**
-       * 2) Build OA CREATE payload WITHOUT username.
-       *
-       * OA will generate the username itself (e.g. prefix + suffix),
-       * instead of us forcing Alma primary_id as the username.
-       */
-      const payload: OAAccountCreate = {
-        // username: <omitted on purpose so OA can generate it>
-        email:       validation.email!,
-        first_name:  validation.first_name!,
-        last_name:   validation.last_name!,
-        expires:     validation.expires!,
-        alma_group_code: validation.alma_group_code!,
-      };
-
-      // 3) Call OA /create (no modify here)
-      const res = await this.oa.createAccount(payload);
-      this.lastProxyResponse = JSON.stringify(res, null, 2);
-
-      // OA now returns the ACTUAL username it generated (with suffix)
-      const oaUsername =
-        res?.summary?.username ||
-        (res as any)?.raw?.username ||
-        pid; // last-resort fallback
-
-      if (res.created) {
-        this.actionStatus =
-          `OpenAthens account created${oaUsername ? `: ${oaUsername}` : ''}`;
-      } else if ((res as any).alreadyExists) {
-        const reason = (res as any).reason || 'An account already exists for this user.';
-        this.actionStatus =
-          `OpenAthens account already exists${oaUsername ? `: ${oaUsername}` : ''}`;
-        if (reason) {
-          this.actionStatus += ` — ${reason}`;
-        }
-      } else {
-        const reason = (res as any).reason || 'See debug panel for details.';
-        this.actionStatus = `OpenAthens account not created — ${reason}`;
+      if (result.needsReload) {
+        await this.refreshAlmaUserSilently();
       }
-
-      // 4) If we have an OA username, try to write it back to Alma
-      //    using config-driven fields and ID type.
-      if (oaUsername && pid) {
-        try {
-          await this.alma.writeBackOAUsernameBoth(
-            pid,
-            oaUsername,
-            this.oaIdTypeCode,             // config: OA ID type (e.g. "02")
-            this.settings.oaPrimaryField,  // config: primary storage field
-            this.settings.oaSecondaryField // config: secondary storage field
-          );
-          this.actionStatus += ' — saved to Alma';
-          await this.refreshAlmaUserSilently();
-        } catch (almaErr: any) {
-          // Keep the OA success message, just append Alma failure info.
-          this.actionStatus += ' — OA ok, but Alma update failed';
-          const msg = almaErr?.message || 'Alma update failed. See Alma logs for details.';
-          this.lastProxyResponse += `\n\n[Alma write-back error]\n${msg}`;
-        }
-      }
-
-    } catch (e: any) {
-      // Only OA/proxy-level failures should end up here.
-
-      const status = e?.status;
-      const errBody = e?.error;
-      const rawMsg = errBody
-        ? JSON.stringify(errBody)
-        : (e?.message || String(e) || '');
-
-      const lower = rawMsg.toLowerCase();
-
-      // Heuristic for "already exists" returned as 400/409 from proxy/OA
-      if (
-        (status === 400 || status === 409) &&
-        (lower.includes('already exist') ||
-         lower.includes('duplicate') ||
-         lower.includes('uniqueemail') ||
-         lower.includes('unique email'))
-      ) {
-        this.actionStatus = 'OpenAthens account already exists';
-        this.lastProxyResponse = rawMsg;
-        return;
-      }
-
-      this.actionStatus = 'Create failed';
-      this.lastProxyResponse = errBody
-        ? JSON.stringify(errBody, null, 2)
-        : (e?.message || String(e));
     } finally {
-      this.busy = false;
+      this.state.setBusy(false);
     }
   }
 
   async syncOA(): Promise<void> {
     if (!this.user && !this.selectedUserId) return;
 
-    this.busy = true;
-    this.actionStatus = 'Syncing…';
-    this.lastProxyResponse = '';
+    this.state.setBusy(true);
+    this.actionStatus = this.translate.instant('oa.status.syncing');
+    this.state.setLastProxyResponse('');
 
     try {
-      const pid = this.user?.primary_id || this.selectedUserId!;
-
-      // 1) Try to find an existing OA account by known identifiers
-      let got = await this.findOAAccount();
-      let oaUsername = got?.account?.username || got?.normalizedUsername;
-
-      // 2) If nothing found, attempt a modify using Alma data to (re)sync OA
-      if (!oaUsername) {
-        const email = this.getEmail() ?? '';
-        const first_name = String(this.user?.first_name ?? '').trim();
-        const last_name  = String(this.user?.last_name  ?? '').trim();
-        const rawExp =
-          (this.user as any)?.expiry_date ??
-          (this.user as any)?.expiration_date ??
-          '';
-        const expires = String(rawExp).slice(0, 10);
-
-        const missing: string[] = [];
-        if (!email)      missing.push('email');
-        if (!first_name) missing.push('first name');
-        if (!last_name)  missing.push('last name');
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(expires)) {
-          missing.push('expiry (YYYY-MM-DD)');
-        }
-
-        if (missing.length) {
-          this.actionStatus =
-            `Cannot update OA: missing ${missing.join(', ')}`;
-          this.lastProxyResponse =
-            'Alma record lacks required fields for OA modify.';
-          return;
-        }
-
-        const alma_group_code =
-          (this.user?.user_group as any)?.value ??
-          (this.user as any)?.user_group ??
-          '';
-
-        const modifyPayload: OAAccountModify = {
-          username: pid,
-          email,
-          first_name,
-          last_name,
-          expires,
-          alma_group_code,
-        };
-
-        // --- critical bit: handle 404 / OA_NOT_FOUND here ---
-        try {
-          const modRes = await this.oa.modifyAccount(modifyPayload);
-          this.lastProxyResponse = JSON.stringify(modRes, null, 2);
-        } catch (err: any) {
-          const status = err?.status;
-          const errBody = err?.error;
-          const rawMsg = errBody
-            ? JSON.stringify(errBody)
-            : (err?.message || String(err) || '');
-
-          const code = errBody?.code;
-          const bodyError =
-            typeof errBody?.error === 'string'
-              ? errBody.error.toLowerCase()
-              : '';
-          const lower = rawMsg.toLowerCase();
-
-          if (
-            status === 404 ||
-            code === 'OA_NOT_FOUND' ||
-            bodyError.includes('not found') ||
-            lower.includes('not found')
-          ) {
-            this.actionStatus = 'No OA account found';
-            this.lastProxyResponse = errBody
-              ? JSON.stringify(errBody, null, 2)
-              : rawMsg;
-            return;
-          }
-
-          // Anything else -> let the outer catch handle it as "Sync failed"
-          throw err;
-        }
-
-        // After modify, re-query OA to confirm the account
-        got = await this.findOAAccount();
-        oaUsername = got?.account?.username || got?.normalizedUsername;
-      }
-
-      // 3) If we still have no OA account, report clearly and stop
-      if (!oaUsername) {
-        this.actionStatus = 'No OA account found';
-        this.lastProxyResponse = JSON.stringify(
-          got ?? { found: false },
-          null,
-          2
-        );
-        return;
-      }
-
-      // 4) OA account is confirmed — now attempt Alma write-back.
-      this.actionStatus = `Synced — OA username: ${oaUsername}`;
-      this.lastProxyResponse = JSON.stringify(
-        { account: got?.account },
-        null,
-        2
+      const result = await this.oaWorkflow.syncAccountWorkflow(
+        this.user,
+        this.selectedUserId,
+        this.oaIdTypeCode,
+        this.settings.oaPrimaryField,
+        this.settings.oaSecondaryField
       );
 
-      try {
-        await this.alma.writeBackOAUsernameBoth(
-          pid,
-          oaUsername,
-          this.oaIdTypeCode,             // ← config-driven ID type code
-          this.settings.oaPrimaryField,  // ← config-driven primary target
-          this.settings.oaSecondaryField // ← config-driven secondary target
-        );
-        this.actionStatus += ' — saved to Alma';
+      this.actionStatus = result.statusText;
+      if (result.proxyDebugText != null) {
+        this.state.setLastProxyResponse(result.proxyDebugText);
+      }
+
+      if (result.needsReload) {
         await this.refreshAlmaUserSilently();
-      } catch (almaErr: any) {
-        // Keep the good OA status; just annotate Alma failure.
-        this.actionStatus += ' — OA ok, but Alma update failed';
-        const msg = almaErr?.message || 'Alma update failed. See Alma logs for details.';
-        this.lastProxyResponse += `\n\n[Alma write-back error]\n${msg}`;
-      }
-
-    } catch (e: any) {
-      // Only OA/proxy-level errors that we didn't specially handle above land here.
-      const status = e?.status;
-      const errBody = e?.error;
-      const rawMsg = errBody
-        ? JSON.stringify(errBody)
-        : (e?.message || String(e) || '');
-
-      const lower = rawMsg.toLowerCase();
-      if (
-        (status === 400 || status === 409) &&
-        (lower.includes('already exist') ||
-         lower.includes('duplicate') ||
-         lower.includes('uniqueemail') ||
-         lower.includes('unique email'))
-      ) {
-        this.actionStatus = 'OpenAthens account already exists';
-        this.lastProxyResponse = rawMsg;
-        return;
-      }
-
-      this.actionStatus = 'Sync failed';
-      this.lastProxyResponse = errBody
-        ? JSON.stringify(errBody, null, 2)
-        : (e?.message || String(e));
-    } finally {
-      this.busy = false;
-    }
-  }
-
-  async verifyOA(): Promise<void> {
-    this.busy = true;
-    this.actionStatus = 'Verifying…';
-    this.lastProxyResponse = '';
-
-    try {
-      const got = await this.findOAAccount();
-      const found = !!got?.account;
-      const oaUsername = got?.account?.username || got?.normalizedUsername || '';
-
-      if (found) {
-        this.actionStatus = `Exists in OA${oaUsername ? `: ${oaUsername}` : ''}`;
-        this.lastProxyResponse = JSON.stringify(got, null, 2);
-      } else {
-        this.actionStatus = 'No OA account found';
-        this.lastProxyResponse = JSON.stringify(
-          got ?? { found: false },
-          null,
-          2
-        );
-      }
-    } catch (e: any) {
-      const status = e?.status;
-      const errBody = e?.error;
-      const rawMsg = errBody
-        ? JSON.stringify(errBody)
-        : (e?.message || String(e) || '');
-
-      const code = errBody?.code;
-      const bodyError =
-        typeof errBody?.error === 'string'
-          ? errBody.error.toLowerCase()
-          : '';
-      const lower = rawMsg.toLowerCase();
-
-      // Treat OA 404 / OA_NOT_FOUND as "no account", not a hard failure
-      if (
-        status === 404 ||
-        code === 'OA_NOT_FOUND' ||
-        bodyError.includes('not found') ||
-        lower.includes('not found')
-      ) {
-        this.actionStatus = 'No OA account found';
-        this.lastProxyResponse = errBody
-          ? JSON.stringify(errBody, null, 2)
-          : rawMsg;
-      } else {
-        this.actionStatus = 'Verify failed';
-        this.lastProxyResponse = errBody
-          ? JSON.stringify(errBody, null, 2)
-          : rawMsg;
       }
     } finally {
-      this.busy = false;
+      this.state.setBusy(false);
     }
   }
 
@@ -961,10 +684,11 @@ export class MainComponent implements OnInit {
   onReset(): void {
     // Clear status/debug
     this.actionStatus = '';
-    this.lastProxyResponse = '';
     this.error = undefined;
     this.searchError = undefined;
     this.oaUsername = null;
+    this.state.setLastProxyResponse('');
+    this.state.setBusy(false);
 
     // Reset search pagination state
     this.results = [];
@@ -977,6 +701,7 @@ export class MainComponent implements OnInit {
     // If we’re in entity context, reload that user
     if (this.useEntityContext && this.entityContextUserId) {
       this.user = null;
+      this.state.setUser(null);
       this.selectedUserId = this.entityContextUserId;
       this.showSearch = false;
       this.showResults = false;

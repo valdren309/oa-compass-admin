@@ -120,6 +120,102 @@ These are referenced in the CCR.
 
 ---
 
+### **4.4 Node Proxy Architecture (Phase 6 Modularized Design)**
+
+The Node proxy is a required security layer that performs all OpenAthens Admin API interactions. Phase 6 formalizes the proxy into a clean module architecture with strict behavioral guarantees.
+
+### **4.4.1 Module Overview**
+
+#### **config.js**
+
+* Loads and validates environment variables.
+* Exposes:
+
+  * `PORT`
+  * `ALLOWED_ORIGINS[]`
+  * `OA_BASE_URL`, `OA_TENANT`, `OA_API_KEY`, `OA_USERNAME_PREFIX`, `OA_CREATE_URL`
+  * `GROUP_MAP` and `CODE_TO_KEY` (Alma → OA mappings)
+* Ensures OA credentials are never exposed to the client.
+
+#### **cors.js**
+
+* Exports `setCors(req, res, ALLOWED_ORIGINS)`.
+* Applies Access-Control headers only when `Origin` matches allowlist.
+
+#### **oa-client.js**
+
+* Low-level HTTPS utilities:
+
+  * `httpPostJsonWithKey(url, apiKey, payload, contentType)`
+  * `httpGetJsonWithKey(url, apiKey)`
+  * `normalizeUsername(u)`
+  * `queryAccount({ username, email })`
+  * `resolveAccountIdOrThrow(credentials)`
+* Encapsulates all OA API request construction, parsing, and error mapping.
+
+#### **validators.js**
+
+* Input validators for proxy endpoints:
+
+  * `isValidEmail(email)`
+  * `isValidDateYYYYMMDD(str)`
+  * `validateCreatePayload(body)`
+* Returns structured `{ ok: boolean, errors?: {...} }` objects.
+
+#### **routes/users.js**
+
+Handles all OA user endpoints:
+
+* `/v1/oa/users/verify`
+* `/v1/oa/users/get`
+* `/v1/oa/users/create`
+* `/v1/oa/users/modify`
+* `/v1/oa/users/resend-activation`
+
+Provides canonical helpers:
+
+* `readJsonBody(req)` (200 KB cap + unified parse error)
+* `sendJson(res, status, body)`
+* `derivePolicy({ alma_group_key, alma_group_code })`
+* `sendOAError(res, status, body)`
+* `checkRequiredEnv(params)`
+
+#### **server.js**
+
+* Creates HTTP server.
+* Wires CORS, OPTIONS preflight, health check.
+* Dispatches to handlers in `routes/users.js`.
+* Contains **no OA logic**.
+
+### **4.4.2 Error Normalization Policy**
+
+All OA errors are transformed into a canonical structure that the Cloud App depends on:
+
+```
+{
+  error: string,
+  code: string | null,
+  message: string,
+  status: number
+}
+```
+
+This ensures stable behavior regardless of future OA API changes.
+
+### **4.4.3 Behavior Preservation**
+
+This modularization shall not modify:
+
+* Allowed routes
+* Request/response contracts
+* Group mapping behavior
+* Username normalization logic
+* Activation email workflow
+
+Only code structure, readability, testability, and maintainability are affected.
+
+---
+
 # **5. Services**
 
 ## **5.1 AlmaUserService**
@@ -189,10 +285,103 @@ This service enables the shift from a Dashboard Widget → true entity-aware Clo
 
 ---
 
-## **5.4 StateService (optional, planned)**
+## **5.4 OAWorkflowService (New Module)**
 
-Provides shared state backing the UserShell, Search, and Header components.
-Used in Phase 4+.
+### **Purpose**
+
+Handles all high‑level OpenAthens workflows by orchestrating Alma and OA proxy operations. Centralizes business logic currently in `MainComponent`, reducing component complexity and improving testability.
+
+### **Responsibilities**
+
+* Validate Alma users for OA operations.
+* Build OA create & modify payloads (username omitted on create).
+* Call `OAProxyService` for `createAccount`, `modifyAccount`, and `resendActivation` operations.
+* Interpret OA responses (created, already exists, not found, failure).
+* Extract authoritative OA username from OA responses.
+* Write OA username back into Alma using `AlmaUserService.writeBackOAUsernameBoth`.
+* Return workflow results in a normalized format.
+
+### **Exclusions**
+
+* Does **not** directly call Alma REST endpoints.
+* Does **not** store state (delegated to StateService).
+* Does **not** implement Verify flow (handled implicitly through Sync).
+
+### **Public API**
+
+```ts
+interface OAWorkflowResult {
+  statusText: string;
+  proxyDebugText?: string;
+  oaUsername?: string;
+  needsReload: boolean;
+}
+```
+
+```ts
+resendActivationWorkflow(
+    user: AlmaUser | null,
+    selectedUserId: string | null
+): Promise<OAWorkflowResult>
+```
+
+```ts
+createAccountWorkflow(
+  user: AlmaUser | null,
+  selectedUserId: string | null,
+  oaIdTypeCode: string,
+  primaryField: OAUsernameField,
+  secondaryField: OASecondaryField
+): Promise<OAWorkflowResult>;
+```
+
+```ts
+syncAccountWorkflow(
+  user: AlmaUser | null,
+  selectedUserId: string | null,
+  oaIdTypeCode: string,
+  primaryField: OAUsernameField,
+  secondaryField: OASecondaryField
+): Promise<OAWorkflowResult>;
+```
+
+### **Internal Dependencies**
+
+* `AlmaUserService`
+* `OAProxyService`
+
+---
+
+## **5.5 StateService (New Module, Canonicalized)**
+
+### **Purpose**
+
+Provides a shared, reactive store for UI‑relevant state: current user, busy flag, proxy debug output. Reduces cross‑component wiring and removes UI state from `MainComponent`.
+
+### **Responsibilities**
+
+* Maintain global `busy` state.
+* Store last proxy response for debug panel.
+* Optionally store the currently loaded Alma user.
+* Provide observable streams for UI binding.
+
+### **Public API**
+
+```ts
+setUser(user: AlmaUser | null): void;
+getUser(): Observable<AlmaUser | null>;
+
+setBusy(isBusy: boolean): void;
+getBusy(): Observable<boolean>;
+
+setLastProxyResponse(text: string): void;
+getLastProxyResponse(): Observable<string>;
+```
+
+### **Internal Notes**
+
+* Uses `BehaviorSubject` internally.
+* UI binds using `async` pipe.
 
 ---
 

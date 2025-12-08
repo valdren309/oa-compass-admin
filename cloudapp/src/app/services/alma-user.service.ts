@@ -16,11 +16,15 @@ export class AlmaUserService {
   ) {}
 
   /**
-   * Get a FULL Alma user record (including identifiers) as JSON.
+   * Internal helper: Get a FULL Alma user record (raw JSON).
+   *
+   * - view=full
+   * - expand=none
+   * - format=json
    */
-  getUser(primaryId: string): Promise<AlmaUser> {
+  private async getFullUserRaw(primaryId: string): Promise<any> {
     return firstValueFrom(
-      this.api.get<AlmaUser>(
+      this.api.get<any>(
         `/almaws/v1/users/${encodeURIComponent(primaryId)}`,
         {
           view: 'full',
@@ -29,6 +33,14 @@ export class AlmaUserService {
         }
       )
     );
+  }
+
+  /**
+   * Get a FULL Alma user record (including identifiers) as JSON.
+   */
+  async getUser(primaryId: string): Promise<AlmaUser> {
+    const user = await this.getFullUserRaw(primaryId);
+    return user as AlmaUser;
   }
 
   /**
@@ -42,16 +54,7 @@ export class AlmaUserService {
     identifiers: AlmaIdentifier[]
   ): Promise<AlmaUser> {
     // 1) GET full user
-    const user: any = await firstValueFrom(
-      this.api.get<any>(
-        `/almaws/v1/users/${encodeURIComponent(primaryId)}`,
-        {
-          view: 'full',
-          expand: 'none',
-          format: 'json'
-        }
-      )
-    );
+    const user: any = await this.getFullUserRaw(primaryId);
 
     // 2) Replace the top-level identifiers array
     user.user_identifier = identifiers ?? [];
@@ -212,6 +215,21 @@ export class AlmaUserService {
     return { items, resp };
   }
 
+  /**
+   * Smart Alma user search heuristic:
+   *
+   * - If term contains '@'      → try email search first.
+   * - If it looks like an ID    → try primary_id search.
+   * - If it contains a comma    → treat as "Last, First".
+   * - If it has 2+ tokens       → treat as "First Last" variants.
+   * - Always fall back to:
+   *   - all~"<term>"
+   *   - AND-combined all~token queries
+   *
+   * The method tries each query in order until:
+   * - It finds any results, OR
+   * - The response indicates more results exist via a 'next' link.
+   */
   async searchUsersSmart(
     termRaw: string,
     offset: number,
@@ -282,10 +300,8 @@ export class AlmaUserService {
 
     const u: any = user;
 
-    // Email (preferred or first)
-    const emails = u?.contact_info?.email || [];
-    const preferred = emails.find((e: any) => e.preferred);
-    const email = preferred?.email_address || emails[0]?.email_address || '';
+    // Email (preferred or first) via canonical helper
+    const email = this.getEmail(user) ?? '';
 
     // Names
     const first_name = String(u?.first_name ?? '').trim();
@@ -431,16 +447,7 @@ export class AlmaUserService {
         ? idTypeFromCaller.trim()
         : '02';
 
-    const user: any = await firstValueFrom(
-      this.api.get<any>(
-        `/almaws/v1/users/${encodeURIComponent(primaryId)}`,
-        {
-          view: 'full',
-          expand: 'none',
-          format: 'json'
-        }
-      )
-    );
+    const user: any = await this.getFullUserRaw(primaryId);
 
     const oaNote = `OpenAthens: ${oaUsername}`;
 

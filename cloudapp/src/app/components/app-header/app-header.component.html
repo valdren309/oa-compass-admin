@@ -1,14 +1,17 @@
+<!-- src/app/components/app-header/app-header.component.html -->
 <header class="app-header">
   <div class="app-header-main">
 
     <!-- OA Status line -->
     <div class="app-status-line">
-      <span class="app-status-label">OA Status:</span>
+      <span class="app-status-label">
+        {{ 'oa.header.statusLabel' | translate }}
+      </span>
       <span class="app-status-value">
-        {{ statusText || 'User not loaded' }}
+        {{ statusText || ('oa.header.statusUserNotLoaded' | translate) }}
       </span>
       <span *ngIf="busy" class="app-status-busy">
-        (working…)
+        {{ 'oa.header.working' | translate }}
       </span>
     </div>
   </div>
@@ -20,7 +23,7 @@
     mat-icon-button
     type="button"
     (click)="toggleConfig.emit()"
-    aria-label="Open OA Compass configuration (institution-level)">
+    [attr.aria-label]="'oa.header.openConfig' | translate">
     <mat-icon>tune</mat-icon>
   </button>
 
@@ -30,7 +33,7 @@
     type="button"
     (click)="toggleSettings.emit()"
     [attr.aria-pressed]="settingsOpen"
-    aria-label="OA Compass settings">
+    [attr.aria-label]="'oa.header.openSettings' | translate">
     <mat-icon>settings</mat-icon>
   </button>
 </header>

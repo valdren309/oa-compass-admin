@@ -1,3 +1,102 @@
 {
-    "translatedExampleText": "An example of a translated label"
+  "oa": {
+    "header": {
+      "statusLabel": "OA Status:",
+      "statusUserNotLoaded": "User not loaded",
+      "working": "(working…)",
+      "openConfig": "Open OA Compass configuration (institution-level)",
+      "openSettings": "OA Compass settings"
+    },
+    "actions": {
+      "reset": "Reset",
+      "resend": "Resend",
+      "create": "Create",
+      "sync": "Sync",
+      "save": "Save"
+    },
+    "search": {
+      "noResults": "No results found.",
+      "error": "Search failed",
+      "loadMoreError": "Load more failed",
+      "searching": "Searching…",
+      "placeholder": "Search by name, ID, email, barcode…",
+      "searchButton": "Search",
+      "resultsWithCount": "Results ({{count}})",
+      "loadMore": "Load more",
+      "emptyResults": "No matching users found.",
+      "idLabel": "ID:"
+    },
+    "status": {
+      "loadingUser": "Loading user…",
+      "userLoaded": "User loaded.",
+      "loadFailed": "Failed to load user",
+      "userLoadedWithOA": "User loaded — OA username in Alma: {{username}}",
+      "noUserToRefresh": "No user selected to refresh.",
+      "creating": "Creating…",
+      "createBlocked": "Create blocked: missing {{fields}}",
+      "createFailed": "Create failed",
+      "createSuccess": "OpenAthens account created",
+      "createSuccessWithUser": "OpenAthens account created: {{username}}",
+      "createAlreadyExists": "OpenAthens account already exists",
+      "createAlreadyExistsWithUser": "OpenAthens account already exists: {{username}}",
+      "createNotCreated": "OpenAthens account not created — {{reason}}",
+      "syncing": "Syncing…",
+      "syncFailed": "Sync failed",
+      "syncBlocked": "Cannot update OpenAthens: missing {{fields}}",
+      "syncSuccessWithUser": "Synced — OA username: {{username}}",
+      "noOAFound": "No OpenAthens account found",
+      "oaAlreadyExists": "OpenAthens account already exists",
+      "almaFieldsMissingCreate": "Alma record lacks required fields for OA create.",
+      "almaFieldsMissingModify": "Alma record lacks required fields for OA modify.",
+      "almaUpdateFailed": "Alma update failed. See Alma logs for details.",
+      "suffixSavedToAlma": "— saved to Alma",
+      "suffixOAOkAlmaFailed": "— OA ok, but Alma update failed",
+      "verifying": "Verifying…",
+      "verifyFailed": "Verify failed",
+      "existsInOA": "Exists in OA",
+      "existsInOAWithUser": "Exists in OA: {{username}}",
+      "resending": "Resending activation…",
+      "resendFailed": "Resend activation failed",
+      "resendSuccess": "Activation email resent.",
+      "resendMissingEmail": "Cannot resend activation: missing email."
+    },
+    "debug": {
+      "panelTitle": "Debug"
+    },
+    "userInfo": {
+      "almaIdLabel": "Alma ID:",
+      "oaUsernameLabel": "OA Username",
+      "emailLabel": "Email",
+      "userGroupLabel": "User group",
+      "expiryLabel": "Expiry",
+      "noUserSelected": "No user selected."
+    },
+    "settings": {
+      "title": "OA Compass settings",
+      "usernameStorageTitle": "OA username storage",
+      "usernameStorageHelp": "These settings are configured at the institution level in the Configuration view and apply to all OA Compass users.",
+      "primaryFieldLabel": "Primary field",
+      "secondaryFieldLabel": "Secondary field",
+      "displayOptionsTitle": "Display options",
+      "displayOptionsHelp": "These options only affect your view of the OA Compass Admin app.",
+      "showDebugPanelLabel": "Show debug / proxy response panel",
+      "savedMessage": "Settings saved."
+    },
+    "config": {
+      "title": "OA Compass configuration",
+      "proxyTitle": "Proxy connection",
+      "proxyHelp": "Configure how the Cloud App reaches your hardened OA proxy. This should be the Apache URL that reverse-proxies to the Node.js service listening on 127.0.0.1:8081.",
+      "proxyBaseUrlLabel": "Proxy base URL",
+      "usernameStorageTitle": "OA username storage",
+      "usernameStorageHelp": "Choose how Alma should store the OpenAthens username when accounts are created or synced. These settings apply to all OA Compass Admin users in this Alma environment.",
+      "oaIdTypeCodeLabel": "OA identifier type code",
+      "primaryFieldLabel": "Primary OA username field",
+      "secondaryFieldLabel": "Secondary OA username field (optional)",
+      "savedMessage": "Configuration saved."
+    },
+    "provision": {
+      "title": "OpenAthens provisioning",
+      "subtitle": "Use the actions below to manage this user's OpenAthens account."
+    }
+  }
 }

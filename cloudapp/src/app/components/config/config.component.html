@@ -2,7 +2,7 @@
 
 <mat-card class="config-card oa-config-root">
   <mat-card-title class="config-title-row">
-    <span>OA Compass configuration</span>
+    <span>{{ 'oa.config.title' | translate }}</span>
     <span class="config-title-spacer"></span>
   </mat-card-title>
 
@@ -20,16 +20,18 @@
 
       <!-- Proxy / connection settings -->
       <section class="config-section">
-        <h3 class="config-section__title">Proxy connection</h3>
+        <h3 class="config-section__title">
+          {{ 'oa.config.proxyTitle' | translate }}
+        </h3>
         <p class="config-section__help">
-          Configure how the Cloud App reaches your hardened OA proxy. This should
-          be the Apache URL that reverse-proxies to the Node.js service
-          listening on 127.0.0.1:8081.
+          {{ 'oa.config.proxyHelp' | translate }}
         </p>
 
         <div class="config-grid">
           <mat-form-field appearance="fill">
-            <mat-label>Proxy base URL</mat-label>
+            <mat-label>
+              {{ 'oa.config.proxyBaseUrlLabel' | translate }}
+            </mat-label>
             <input
               matInput
               [(ngModel)]="config.proxyBaseUrl"
@@ -41,18 +43,20 @@
 
       <!-- OA username storage (institution-wide) -->
       <section class="config-section">
-        <h3 class="config-section__title">OA username storage</h3>
+        <h3 class="config-section__title">
+          {{ 'oa.config.usernameStorageTitle' | translate }}
+        </h3>
         <p class="config-section__help">
-          Choose how Alma should store the <strong>OpenAthens username</strong>
-          when accounts are created or synced. These settings apply to
-          <strong>all</strong> OA Compass Admin users in this Alma environment.
+          {{ 'oa.config.usernameStorageHelp' | translate }}
         </p>
 
         <div class="config-grid">
 
           <!-- OA identifier type code -->
           <mat-form-field appearance="fill">
-            <mat-label>OA identifier type code</mat-label>
+            <mat-label>
+              {{ 'oa.config.oaIdTypeCodeLabel' | translate }}
+            </mat-label>
             <input
               matInput
               [(ngModel)]="config.oaIdTypeCode"
@@ -62,7 +66,9 @@
 
           <!-- Primary field -->
           <mat-form-field appearance="fill">
-            <mat-label>Primary OA username field</mat-label>
+            <mat-label>
+              {{ 'oa.config.primaryFieldLabel' | translate }}
+            </mat-label>
             <mat-select
               [(ngModel)]="config.oaPrimaryField"
               name="oaPrimaryField">
@@ -76,7 +82,9 @@
 
           <!-- Secondary field -->
           <mat-form-field appearance="fill">
-            <mat-label>Secondary OA username field (optional)</mat-label>
+            <mat-label>
+              {{ 'oa.config.secondaryFieldLabel' | translate }}
+            </mat-label>
             <mat-select
               [(ngModel)]="config.oaSecondaryField"
               name="oaSecondaryField">
@@ -98,7 +106,7 @@
           type="button"
           (click)="resetToDefaults()"
           [disabled]="saving || loading">
-          Reset
+          {{ 'oa.actions.reset' | translate }}
         </button>
 
         <span class="config-actions__spacer"></span>
@@ -109,14 +117,14 @@
           type="button"
           (click)="save()"
           [disabled]="saving || loading">
-          Save
+          {{ 'oa.actions.save' | translate }}
         </button>
       </div>
 
       <!-- Messages -->
       <div class="config-messages">
         <span *ngIf="saved" class="config-success">
-          Configuration saved.
+          {{ 'oa.config.savedMessage' | translate }}
         </span>
         <span *ngIf="error" class="config-error">
           {{ error }}
