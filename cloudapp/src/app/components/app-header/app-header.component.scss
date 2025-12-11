@@ -1,11 +1,15 @@
+// src/app/components/app-header/app-header.component.scss
+
 .app-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 4px 8px 6px;
-  margin-bottom: 4px;
-  background-color: var(--oa-accent);
-  color: var(--oa-accent-on);
+  padding: 6px 8px;
+  margin-bottom: 8px;
+
+  /* OA Status header background */
+  background-color: #f2f2f2;
+  color: #333;  // readable on light gray
 }
 
 .app-header-main {
@@ -42,9 +46,4 @@
 .app-context {
   font-size: 11px;
   opacity: 0.9;
-}
-
-/* Icon buttons inherit header color */
-.app-header .mat-mdc-icon-button {
-  color: inherit;
 }

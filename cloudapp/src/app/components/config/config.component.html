@@ -100,24 +100,20 @@
       </section>
 
       <!-- Actions -->
-      <div class="config-actions">
+      <div class="oa-footer-actions">
         <button
-          mat-stroked-button
+          mat-flat-button
           type="button"
-          (click)="resetToDefaults()"
-          [disabled]="saving || loading">
-          {{ 'oa.actions.reset' | translate }}
+          (click)="onCancel()">
+          Cancel
         </button>
-
-        <span class="config-actions__spacer"></span>
 
         <button
           mat-flat-button
           color="primary"
           type="button"
-          (click)="save()"
-          [disabled]="saving || loading">
-          {{ 'oa.actions.save' | translate }}
+          (click)="onSave()">
+          Save
         </button>
       </div>
 

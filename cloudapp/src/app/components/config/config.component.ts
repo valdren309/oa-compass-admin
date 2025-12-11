@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CloudAppConfigService } from '@exlibris/exl-cloudapp-angular-lib';
+import { Router } from '@angular/router';
 
 import {
   OAUsernameField,
@@ -69,6 +70,7 @@ export class ConfigComponent implements OnInit {
 
   constructor(
     private configService: CloudAppConfigService,
+    private router: Router,
   ) {}
 
   ngOnInit(): void {
@@ -93,7 +95,14 @@ export class ConfigComponent implements OnInit {
     });
   }
 
-  save(): void {
+  /**
+   * Cancel: discard unsaved changes and return to main state.
+   */
+  onCancel(): void {
+    this.router.navigate(['']);
+  }
+
+  onSave(): void {
     if (this.saving) return;
     this.saving = true;
     this.error = undefined;
@@ -108,6 +117,8 @@ export class ConfigComponent implements OnInit {
         this.saving = false;
         this.saved = true;
         this.config = toSave;
+        // After a successful save, return to the main view
+        this.router.navigate(['']);
       },
       error: (e) => {
         this.saving = false;

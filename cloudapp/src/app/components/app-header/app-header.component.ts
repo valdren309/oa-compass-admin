@@ -1,3 +1,4 @@
+// src/app/components/app-header/app-header.components.ts
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 
 @Component({

@@ -1,13 +1,23 @@
 {
    "id": "oa-compass-admin",
    "title": "OA Compass Admin",
-   "subtitle": "Create/sync OpenAthens users",
+   "subtitle": "OpenAthens Compass provisioning for Alma users",
    "author": "Eric Parsons",
-   "description": "Provision and sync OpenAthens (Compass) accounts from Alma user records.",
+   "description": "Provision and sync OpenAthens (Compass) accounts directly from Alma user records using a secure Node.js proxy.",
+   "license": "https://www.apache.org/licenses/LICENSE-2.0",
+   "icon": {
+      "type": "url",
+      "value": "/assets/icons/oa-compass-admin.png"
+   },
    "isWidget": false,
    "entities": [
       "USER"
    ],
+   "pages": {
+      "settings": "/#/settings",
+      "config": "/#/config",
+      "help": "https://github.com/YOUR_ORG/oa-compass-admin#help"
+   },
    "contentSecurity": {
       "connectSrc": [
          "https://api-na.hosted.exlibrisgroup.com",

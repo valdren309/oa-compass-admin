@@ -1,37 +1,9 @@
-<!--/src/app/component/main/main.component.html-->
+<!-- src/app/components/main/main.component.html -->
 <div class="oa-main-wrap">
 
-  <!-- Combined header: OA Status + context + icons -->
-  <oa-app-header
-    [settingsOpen]="showSettings"
-    [useEntityContext]="useEntityContext"
-    [entityContextUserId]="entityContextUserId"
-    [statusText]="actionStatus || ('oa.header.statusUserNotLoaded' | translate)"
-    [busy]="(busy$ | async) ?? false"
-    (toggleSettings)="toggleSettings()"
-    (toggleConfig)="toggleConfig()">
-  </oa-app-header>
-
-  <!-- SETTINGS VIEW ------------------------------------------------------- -->
-  <section *ngIf="showSettings" class="oa-section oa-section--settings">
-    <oa-settings
-      (settingsChanged)="onSettingsChanged($event)">
-    </oa-settings>
-  </section>
-
-  <!-- CONFIG VIEW --------------------------------------------------------- -->
-  <section *ngIf="showConfig" class="oa-section oa-section--settings">
-    <oa-config></oa-config>
-  </section>
-
-  <!-- MAIN CONTENT -------------------------------------------------------- -->
-  <section
-    *ngIf="!showSettings && !showConfig"
-    class="oa-section oa-section--content">
-
-    <!-- Action buttons row (Cloud App style: mat-flat-button, primary on the right) -->
+  <!-- ACTION BAR (above header, only in main view) -->
+  <ng-container *ngIf="!showSettings && !showConfig">
     <div class="eca-actions oa-actions-row">
-      <!-- Neutral / secondary actions first -->
       <!-- Reset -->
       <button
         mat-flat-button
@@ -65,7 +37,6 @@
       </button>
 
       <!-- Primary action on the far right -->
-       <!-- Create -->
       <button
         *ngIf="user"
         mat-flat-button
@@ -76,6 +47,35 @@
         {{ 'oa.actions.create' | translate }}
       </button>
     </div>
+  </ng-container>
+
+  <!-- HEADER -------------------------------------------------------------- -->
+  <oa-app-header
+    [settingsOpen]="showSettings"
+    [useEntityContext]="useEntityContext"
+    [entityContextUserId]="entityContextUserId"
+    [statusText]="actionStatus || ('oa.header.statusUserNotLoaded' | translate)"
+    [busy]="(busy$ | async) ?? false"
+    (toggleSettings)="toggleSettings()"
+    (toggleConfig)="toggleConfig()">
+  </oa-app-header>
+
+  <!-- SETTINGS VIEW ------------------------------------------------------- -->
+  <section *ngIf="showSettings" class="oa-section oa-section--settings">
+    <oa-settings
+      (settingsChanged)="onSettingsChanged($event)">
+    </oa-settings>
+  </section>
+
+  <!-- CONFIG VIEW --------------------------------------------------------- -->
+  <section *ngIf="showConfig" class="oa-section oa-section--settings">
+    <oa-config></oa-config>
+  </section>
+
+  <!-- MAIN CONTENT -------------------------------------------------------- -->
+  <section
+    *ngIf="!showSettings && !showConfig"
+    class="oa-section oa-section--content">
 
     <!-- If no user yet, show the finder search -->
     <ng-container *ngIf="!user; else selectedUserBlock">
@@ -129,4 +129,21 @@
     </ng-template>
 
   </section>
+
+  <!-- GLOBAL LOADING OVERLAY (covers entire app content area) -->
+  <div class="oa-global-loading" *ngIf="searching">
+    <div class="oa-global-loading__backdrop"></div>
+
+    <div class="oa-global-loading__content">
+      <mat-progress-spinner
+        mode="indeterminate"
+        [diameter]="48">
+      </mat-progress-spinner>
+
+      <div class="oa-global-loading__label">
+        {{ 'oa.search.searching' | translate }}
+      </div>
+    </div>
+  </div>
+
 </div>

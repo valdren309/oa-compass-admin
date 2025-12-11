@@ -15,25 +15,4 @@
       </span>
     </div>
   </div>
-
-  <span class="spacer"></span>
-
-  <!-- Config icon (institution-level) -->
-  <button
-    mat-icon-button
-    type="button"
-    (click)="toggleConfig.emit()"
-    [attr.aria-label]="'oa.header.openConfig' | translate">
-    <mat-icon>tune</mat-icon>
-  </button>
-
-  <!-- Per-user settings (gear) -->
-  <button
-    mat-icon-button
-    type="button"
-    (click)="toggleSettings.emit()"
-    [attr.aria-pressed]="settingsOpen"
-    [attr.aria-label]="'oa.header.openSettings' | translate">
-    <mat-icon>settings</mat-icon>
-  </button>
 </header>

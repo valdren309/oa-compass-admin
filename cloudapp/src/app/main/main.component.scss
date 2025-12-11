@@ -1,16 +1,34 @@
-/* //src/app/component/main/main.component.scss */
+/* src/app/components/main/main.component.scss */
+
 .oa-main-wrap {
   display: flex;
   flex-direction: column;
   height: 100%;
+  position: relative; /* needed for the global loading overlay */
 }
 
 /* Actions row under the header (uses Cloud App eca-actions pattern) */
 .oa-actions-row {
   display: flex;
-  justify-content: flex-end;  /* buttons right-justified */
+  justify-content: flex-end;   /* right-justify the group */
+  align-items: stretch;
   gap: 8px;
   margin: 8px 0 16px;
+  flex-wrap: nowrap;           /* <<< keep all four on a single row */
+}
+
+/* Make the four buttons visually similar width without clipping */
+.oa-actions-row .mat-mdc-button-base {
+  flex: 0 1 120px;             /* allow them to shrink a bit if needed */
+  max-width: 140px;            /* upper bound so they don’t get huge */
+}
+
+/* Make the four action buttons visually consistent */
+.oa-actions-row .mat-mdc-button-base {
+  min-width: 88px;
+  max-width: 128px;
+  flex: 0 1 128px;
+  box-sizing: border-box;
 }
 
 /* Spacing hooks for stacked blocks if needed later */
@@ -43,4 +61,44 @@
   border-radius: 4px;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+/* -------------------------------------------------------
+ * Global loading overlay (covers whole app content)
+ * -----------------------------------------------------*/
+
+.oa-global-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 2000; /* above everything else in the app */
+}
+
+/* Gray scrim behind the spinner */
+.oa-global-loading__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.06); /* slightly darker than before */
+}
+
+/* Centered spinner + label */
+.oa-global-loading__content {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+/* “Searching…” label under the spinner */
+.oa-global-loading__label {
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.75);
+}
+
+/* Make sure the spinner stroke uses the OA purple */
+:host ::ng-deep .oa-global-loading .mat-mdc-progress-spinner circle {
+  stroke: #7D46C6;
 }

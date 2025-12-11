@@ -1,31 +1,132 @@
 // src/main.scss
-
 @import './app/main/main.component.theme';
 
 /**
- * Themed component styles
- * -----------------------
- * The Cloud App SDK calls this mixin with the current Alma theme.
- * Keep this as-is so main.component.theme.scss can style things per-theme.
+ * 1. Theme hook for the Cloud App SDK
+ * -----------------------------------
+ * This is called with the Alma theme object. Keep it thin and delegate to
+ * the main component theming so we don't accidentally invent new APIs.
  */
 @mixin themed-styles($theme, $typography) {
   @include main-component-theme($theme, $typography);
 }
 
 /**
- * Global styles
- * -------------
- * This mixin is applied as global CSS inside the Cloud App iframe.
- * Use it for layout/theming fixes that must override Alma/MDC defaults.
+ * 2. Global CSS inside the Cloud App iframe
+ * -----------------------------------------
+ * Everything here is plain CSS — no theme object. It is applied only inside
+ * the app iframe, so it will not leak into Alma itself.
  */
 @mixin global-styles {
 
   /***************************************************************
-   * 1. Search field: prevent floating label clipping
+   * 2.1 Shared design tokens (colors, borders, card background)
+   ***************************************************************/
+  :root {
+    /* Brand buttons */
+    --oa-primary: #7d46c6;       /* purple, matches app icon */
+    --oa-primary-on: #ffffff;
+
+    --oa-secondary: #f2f2f2;     /* light grey */
+    --oa-secondary-on: #333333;
+
+    /* Header background for OA Status bar */
+    --oa-accent: #f2f2f2;
+    --oa-accent-on: #000000;
+
+    /* Surfaces & borders */
+    --oa-card: #ffffff;
+    --oa-border: #dcdcdc;
+
+    /* Status colors (already used in Settings/Config) */
+    --oa-success: #2e7d32;
+    --oa-danger: #c62828;
+  }
+
+  /***************************************************************
+   * 2.2 Typography (Roboto + weights like the style guide)
+   ***************************************************************/
+  body,
+  .mat-typography {
+    font-family: Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-weight: 300; /* running text */
+    color: #333333;
+  }
+
+  h1,
+  .mat-typography h1 {
+    font-size: 16px;
+    font-weight: 500; /* main titles */
+  }
+
+  h2,
+  .mat-typography h2 {
+    font-size: 14px;
+    font-weight: 400; /* secondary titles */
+  }
+
+  p,
+  .mat-typography p,
+  .mat-body-1 {
+    font-size: 14px;
+    font-weight: 300;
+  }
+
+  /***************************************************************
+   * 2.3 OA header bar (status line)
+   *     Uses the grey header background from the spec.
+   ***************************************************************/
+  .app-header {
+    background-color: var(--oa-accent);
+    color: var(--oa-accent-on);
+  }
+
+  /***************************************************************
+   * 2.4 Form fields: underline, primary focus color, border line
+   *     This is intentionally minimal so we don't fight Alma too
+   *     hard, but it should visually match the guide better.
+   ***************************************************************/
+  .mat-mdc-form-field .mdc-line-ripple::before {
+    /* default line */
+    border-bottom-color: var(--oa-border);
+  }
+
+  .mat-mdc-form-field .mdc-line-ripple::after {
+    /* focus line – use Alma primary if available, otherwise purple */
+    border-bottom-color: var(--sys-primary, var(--oa-primary));
+  }
+
+  /* Slightly heavier input text when focused */
+  .mat-mdc-form-field.mdc-text-field--focused .mat-mdc-input-element {
+    font-weight: 500;
+  }
+
+  /***************************************************************
+   * 2.5 Select panels & config/select helpers
+   ***************************************************************/
+  /* Opaque dropdown panels everywhere in the app */
+  .mat-mdc-select-panel {
+    background-color: var(--eca-surface, #ffffff) !important;
+    border: 1px solid var(--oa-border);
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+  }
+
+  /* Config + Settings already use card styling via component SCSS.
+     Keep the wrapper backgrounds consistent with card tokens. */
+  .oa-config-root .mat-mdc-text-field-wrapper,
+  .oa-config-root .mat-mdc-select-trigger,
+  .oa-config-select-panel,
+  .oa-settings-root .settings-select__box {
+    background-color: var(--oa-card);
+  }
+
+  /***************************************************************
+   * 2.6 Main search-field fixes (prevents floating-label clipping)
    ***************************************************************/
   .oa-user-search-root .oa-search-field.mat-mdc-form-field {
     height: auto;
-    min-height: 56px; // Material filled text-field spec
+    min-height: 56px;
   }
 
   .oa-user-search-root .oa-search-field .mat-mdc-text-field-wrapper {
@@ -49,60 +150,92 @@
   }
 
   /***************************************************************
-   * 2. Config view: field spacing + opaque selects
-   *
-   * These overrides are scoped to the OA Config card so we don't
-   * interfere with Alma or other Cloud Apps.
+   * 2.7 Buttons: flat, square corners, purple / grey palette
+   *     Applies to:
+   *       - main action bar (.eca-actions)
+   *       - footer action rows in Settings/Config (.oa-footer-actions)
    ***************************************************************/
+   /* MAIN ACTION BAR BUTTONS (Reset / Resend / Sync / Create) */
+   .eca-actions button.mat-mdc-button-base {
+     border-radius: 0;
+     text-transform: none;
+     font-weight: 500;
+     min-width: 90px;
+     max-width: 104px;
+     flex: 0 1 104px;
+     box-shadow: none;
+   }
 
-  /* Make form fields in Config tall enough for floating labels */
-  .oa-config-root .mat-mdc-form-field {
-    height: auto;
-    min-height: 56px;
+   /* FOOTER BUTTONS (Settings / Config) – same look, but size to content */
+   .oa-footer-actions button.mat-mdc-button-base {
+      border-radius: 0;
+      text-transform: none;
+      font-weight: 500;
+      min-width: 96px;
+      box-shadow: none;
+   }
+  /* Primary (Create / Save) – filled purple */
+  .eca-actions button.mat-mdc-button-base[color='primary'],
+  .oa-footer-actions button.mat-mdc-button-base[color='primary'] {
+    background-color: var(--oa-primary);
+    color: var(--oa-primary-on);
   }
 
-  .oa-config-root .mat-mdc-text-field-wrapper {
-    overflow: visible;
-    min-height: 56px;
-    background-color: var(--oa-card);
-    border-radius: 4px;
+  .eca-actions button.mat-mdc-button-base[color='primary'] .mat-mdc-button-persistent-ripple::before,
+  .oa-footer-actions button.mat-mdc-button-base[color='primary'] .mat-mdc-button-persistent-ripple::before {
+    background-color: rgba(0, 0, 0, 0.12);
+  }
+
+  /* Secondary (Reset / Resend / Sync / Cancel) – grey */
+  .eca-actions button.mat-mdc-button-base[color='secondary'],
+  .oa-footer-actions button.mat-mdc-button-base[color='secondary'] {
+    background-color: var(--oa-secondary);
+    color: var(--oa-secondary-on);
     border: 1px solid var(--oa-border);
   }
 
-  .oa-config-root .mat-mdc-form-field-flex {
-    min-height: 56px;
-    align-items: center;
+  .eca-actions button.mat-mdc-button-base[color='secondary']:hover,
+  .oa-footer-actions button.mat-mdc-button-base[color='secondary']:hover {
+    background-color: #e6e6e6;
   }
 
-  .oa-config-root .mat-mdc-form-field-infix {
-    padding-top: 16px;
-    padding-bottom: 10px;
+  /* Disabled state: wash everything out a bit */
+  .eca-actions button.mat-mdc-button-base[disabled],
+  .oa-footer-actions button.mat-mdc-button-base[disabled] {
+    opacity: 0.5;
   }
-
-  /* Ensure the select trigger looks like a solid field */
-  .oa-config-root .mat-mdc-select-trigger {
-    background-color: var(--oa-card);
-  }
-
-  /* Opaque dropdown panel for Config selects */
-  .oa-config-select-panel {
-    background-color: var(--eca-surface, #ffffff);
-    border: 1px solid var(--oa-border);
-    border-radius: 4px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
-  }
-}
 
   /***************************************************************
-   * 3. Global select panel: make dropdown options opaque
-   *
-   * Scoped to the Cloud App iframe only, so this won't affect Alma
-   * itself. This fixes the transparent background on all mat-select
-   * panels in the app (Config + Settings).
+   * 2.8 Checkbox, radio, and toggle colors
+   *     Use primary theme color per style guide.
    ***************************************************************/
-  .mat-mdc-select-panel {
-    background-color: var(--eca-surface, #ffffff) !important;
-    border: 1px solid var(--oa-border);
-    border-radius: 4px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+  .mat-mdc-checkbox.mat-primary .mdc-checkbox__background,
+  .mat-mdc-checkbox.mat-accent .mdc-checkbox__background {
+    border-color: var(--sys-primary, var(--oa-primary));
+    background-color: var(--sys-primary, var(--oa-primary));
   }
+
+  .mat-mdc-radio-button.mat-primary .mdc-radio__background::before,
+  .mat-mdc-radio-button.mat-accent .mdc-radio__background::before,
+  .mat-mdc-radio-button.mat-primary .mdc-radio__background::after,
+  .mat-mdc-radio-button.mat-accent .mdc-radio__background::after {
+    border-color: var(--sys-primary, var(--oa-primary));
+  }
+
+  .mat-mdc-slide-toggle.mat-primary .mdc-switch__shadow,
+  .mat-mdc-slide-toggle.mat-accent .mdc-switch__shadow {
+    background-color: var(--sys-primary, var(--oa-primary));
+  }
+
+  /***************************************************************
+   * 2.9 Icons
+   *     Match the guide: 16px, #4164A4.
+   ***************************************************************/
+  .mat-icon,
+  .eca-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    color: #5C2DA7;
+  }
+}

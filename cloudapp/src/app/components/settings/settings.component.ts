@@ -8,6 +8,7 @@ import {
   OACompassSettings,
   DEFAULT_OA_SETTINGS,
 } from '../../models/oa-settings.model';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'oa-settings',
@@ -33,6 +34,7 @@ export class SettingsComponent implements OnInit {
   constructor(
     private settingsService: CloudAppSettingsService,
     private configService: CloudAppConfigService,
+    private router: Router,
   ) {}
 
   ngOnInit(): void {
@@ -80,10 +82,17 @@ export class SettingsComponent implements OnInit {
   }
 
   /**
-   * Save per-user debug preference only.
+   * Cancel: discard unsaved changes and return to main state.
+   */
+  onCancel(): void {
+    this.router.navigate(['']);
+  }
+
+  /**
+   * Save per-user debug preference only, then return to main state.
    * Institution-level OA storage is edited in the Config UI.
    */
-  save(): void {
+  onSave(): void {
     if (this.saving) return;
     this.saving = true;
     this.error = undefined;
@@ -97,8 +106,10 @@ export class SettingsComponent implements OnInit {
       next: () => {
         this.saving = false;
         this.saved = true;
-        // Emit full settings so MainComponent can refresh debug panel state
+        // Emit full settings so MainComponent can refresh debug panel state (if used)
         this.settingsChanged.emit({ ...this.settings });
+        // Return to main state
+        this.router.navigate(['']);
       },
       error: (e) => {
         this.saving = false;

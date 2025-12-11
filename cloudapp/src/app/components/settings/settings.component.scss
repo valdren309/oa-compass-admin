@@ -1,3 +1,4 @@
+// src/app/components/settings/settings.component.scss
 :host {
   display: block;
 }
@@ -134,4 +135,24 @@
 .settings-select__box .mat-mdc-select-trigger {
   background-color: var(--eca-surface, #ffffff);
   border-radius: 4px;
+}
+
+.oa-footer-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+/* ---------------------------------------------------------
+ * Button color overrides (Settings)
+ * --------------------------------------------------------- */
+:host ::ng-deep .settings-card .mat-mdc-unelevated-button.mat-primary {
+  background-color: #7d46c6 !important;  /* OA purple */
+  color: #ffffff !important;
+}
+
+:host ::ng-deep .settings-card .mat-mdc-unelevated-button.mat-secondary {
+  background-color: #f2f2f2 !important;  /* light gray */
+  color: #333333 !important;
 }

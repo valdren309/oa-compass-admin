@@ -1,4 +1,4 @@
-/* src/app/components/config/config.component.scss */
+// src/app/components/config/config.component.scss
 
 :host {
   display: block;
@@ -122,4 +122,24 @@
 
 .config-error {
   color: var(--oa-danger);
+}
+
+.oa-footer-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+/* ---------------------------------------------------------
+ * Button color overrides (Config)
+ * --------------------------------------------------------- */
+:host ::ng-deep .config-card .mat-mdc-unelevated-button.mat-primary {
+  background-color: #7d46c6 !important;
+  color: #ffffff !important;
+}
+
+:host ::ng-deep .config-card .mat-mdc-unelevated-button.mat-secondary {
+  background-color: #f2f2f2 !important;
+  color: #333333 !important;
 }

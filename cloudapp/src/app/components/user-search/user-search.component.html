@@ -1,19 +1,6 @@
 <!-- src/app/components/user-search/user-search.component.html -->
 <section class="eca-section oa-user-search-root">
 
-  <!-- Style-guide loading overlay -->
-  <div class="loading-shade" *ngIf="searching">
-    <div class="loading-inner">
-      <mat-progress-spinner
-        mode="indeterminate"
-        diameter="40">
-      </mat-progress-spinner>
-      <div class="loading-label">
-        {{ 'oa.search.searching' | translate }}
-      </div>
-    </div>
-  </div>
-
   <!-- Search input -->
   <mat-form-field class="oa-search-field" appearance="fill">
     <mat-label>{{ 'oa.search.placeholder' | translate }}</mat-label>
@@ -62,10 +49,10 @@
       <mat-card-content>
         <mat-selection-list
           [multiple]="false"
+          [hideSingleSelectionIndicator]="true"
           class="results-list">
           <mat-list-option
             *ngFor="let r of results; trackBy: trackUser"
-            [value]="r"
             (click)="onRowClick(r)">
             <div class="result-row">
               <div class="result-main">
@@ -76,6 +63,15 @@
                   {{ 'oa.search.idLabel' | translate }} {{ r.primary_id }}
                 </div>
               </div>
+
+              <!-- Icon-only “chevron” select button -->
+              <button
+                mat-icon-button
+                type="button"
+                class="result-chevron"
+                [attr.aria-label]="'oa.search.selectUser' | translate">
+                <mat-icon>chevron_right</mat-icon>
+              </button>
             </div>
           </mat-list-option>
         </mat-selection-list>

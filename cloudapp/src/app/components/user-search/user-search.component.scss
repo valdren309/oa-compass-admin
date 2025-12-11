@@ -1,7 +1,6 @@
 /* src/app/components/user-search/user-search.component.scss */
 
 .oa-user-search-root {
-  position: relative;              /* so overlay positions against this */
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -10,29 +9,6 @@
 /* Search field spans the full width */
 .oa-search-field {
   width: 100%;
-}
-
-/* Cloud App loading overlay */
-.loading-shade {
-  position: absolute;
-  inset: 0;                        /* top:0; right:0; bottom:0; left:0 */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.7);
-  z-index: 10;                     /* above form field & results */
-}
-
-.loading-inner {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-}
-
-.loading-label {
-  font-size: 12px;
-  opacity: 0.85;
 }
 
 /* Error line under the field */
@@ -67,7 +43,15 @@
   padding-top: 4px;
 }
 
+/* One-line row: text on the left, chevron on the right */
 .result-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.result-main {
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -81,6 +65,19 @@
 .result-meta {
   font-size: 12px;
   opacity: 0.75;
+}
+
+/* Icon-only “select” chevron */
+.result-chevron {
+  min-width: 32px;
+  min-height: 32px;
+}
+
+.result-chevron mat-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  color: #7D46C6; /* slightly darker OA purple */
 }
 
 .empty-results {
