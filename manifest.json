@@ -5,6 +5,7 @@
    "author": "Eric Parsons",
    "description": "Provision and sync OpenAthens (Compass) accounts directly from Alma user records using a secure Node.js proxy.",
    "license": "https://www.apache.org/licenses/LICENSE-2.0",
+   "relevantForInst": ["01IASU_INST"],
    "icon": {
       "type": "url",
       "value": "/assets/icons/oa-compass-admin.png"
