@@ -16,7 +16,7 @@
    "pages": {
       "settings": "/#/settings",
       "config": "/#/config",
-      "help": "https://github.com/YOUR_ORG/oa-compass-admin#help"
+      "help": "https://github.com/valdren309/oa-compass-admin"
    },
    "contentSecurity": {
       "connectSrc": [
