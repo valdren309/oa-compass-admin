@@ -140,6 +140,8 @@ The OA Compass Admin system consists of three cooperating layers:
 
 The Cloud App runs inside Alma, retrieves Alma users, and performs provisioning workflows.
 All OpenAthens communication is routed exclusively through the secure proxy.
+OpenAthens is the authoritative source of OA usernames.
+The Cloud App never generates, modifies, or stores usernames independently.
 
 ```
 +------------------------------------------------------+
@@ -319,6 +321,7 @@ OA Compass Admin uses a series of small, theme-aware, testable Angular component
 *(Institution-level settings)*
 * Controls all **OA-sensitive configuration**, including:
   * Proxy Base URL (HTTPS-required)
+  * Email domain exclusion rule (skip OA account creation)
   * OA Identifier Type Code
   * Primary/Secondary write-back fields
 * Values are stored centrally using `CloudAppConfigService`
@@ -670,6 +673,7 @@ Uses `CloudAppSettingsService` to persist preferences such as:
 
 Uses `CloudAppConfigService` to store:
 * Proxy Base URL (HTTPS-only)
+* Email domain exclusion rule (skip OA account creation)
 * OA Identifier Type Code
 * Primary/Secondary OA Username Write-Back Fields
 
@@ -2241,6 +2245,8 @@ The full project roadmap is defined in **`PROJECT_PLAN.md`** and reflects the co
 
 Includes:
 
+* Removal of obsolete or misleading configuration references
+* Clarification of OA username handling and settings boundaries
 * Full documentation alignment (README, SDD, CCR, PROJECT_PLAN)
 * CHANGELOG.md creation
 * CONTRIBUTING.md (optional but recommended)

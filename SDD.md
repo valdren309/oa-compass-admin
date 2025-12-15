@@ -63,6 +63,11 @@ and synchronize OpenAthens accounts using Alma user data. All OpenAthens integra
 is performed through a hardened Node.js proxy, ensuring strict security boundaries 
 and consistent behavior across institutions.
 
+OpenAthens is treated as the authoritative source of OA usernames.
+The Cloud App never generates, modifies, or infers OA usernames independently.
+Any username returned by OpenAthens is treated as an opaque value and may be
+written back into Alma only according to institution-level configuration.
+
 The application operates in two contexts:
 
 1. **Entity-Aware Mode**  
@@ -386,6 +391,7 @@ This structure ensures **strict separation** between UI display and workflow log
 * Stores institution-level OA configuration:
 
   * proxyBaseUrl (HTTPS required)
+  * Email domain exclusion rule (skip OA provisioning)
   * oaIdTypeCode
   * primary/secondary OA username fields
 * Must validate configuration input.
@@ -596,135 +602,197 @@ All settings and configuration are stored and retrieved using the **Alma Cloud A
 
 No custom Angular `SettingsService` or `ConfigService` exists; components interact directly with these Cloud App services.
 
----
-
 ## **6.1 User-Level Settings (CloudAppSettingsService)**
 
-User-level settings are **personal preferences** that affect only the current Alma staff user. They must **not** change business logic, OA semantics, or institutional policy.
+User-level settings are **personal UI preferences** that affect only the current Alma staff user.
+They must **never** alter OpenAthens behavior, Alma data writes, or institutional policy.
 
-### **Examples of Allowed User Settings**
+User settings exist solely to control **presentation and ergonomics**, not provisioning logic.
 
-* Whether the OA debug panel is shown by default (e.g. `showDebugPanel: boolean`).
-* Future: preferred initial mode ("auto-load entity" vs "manual search").
-* Future: minor UI layout preferences (density, expanded/collapsed cards, etc.).
+### **Allowed User Settings**
+
+Current allowed settings:
+
+* Whether the OA debug / proxy response panel is shown by default
+  (e.g. `showDebugPanel: boolean`)
+
+Potential future settings (explicitly UI-only):
+
+* Preferred initial view (entity-context vs manual search)
+* Collapsed / expanded UI sections
+* Visual density or layout preferences
 
 ### **User Settings Characteristics**
 
-* Stored and retrieved via `CloudAppSettingsService`.
-* Loaded asynchronously at app startup and cached in memory.
-* May safely be reset per user without affecting other staff.
-* Must never contain:
+* Stored and retrieved via `CloudAppSettingsService`
+* Loaded asynchronously at application startup
+* Scoped strictly to the current Alma staff user
+* Safe to reset without affecting other users or workflows
 
-  * OA tenants, URLs, or credentials
-  * Alma identifier type codes
-  * Any data that changes how OA or Alma are updated
+User settings **must never contain**:
+
+* OA usernames or identifiers
+* Alma identifier type codes
+* Proxy URLs or OA endpoints
+* Email domain rules
+* Any value that affects Create, Sync, or Resend workflows
 
 ### **User Settings Contract**
 
-All user-level keys and default values must be:
+All user-level settings:
 
-* Defined explicitly in this SDD and the CCR.
-* Read and written in a consistent shape (e.g. a single structured settings object).
-* Backwards-compatible when adding new optional fields.
+* Must be explicitly documented in this SDD and the CCR
+* Must be optional and backward-compatible
+* Must not be required for correct application behavior
+
+User settings are **advisory only** and may be ignored or reset without consequence.
 
 ---
 
 ## **6.2 Institution-Level Configuration (CloudAppConfigService)**
 
-Institution-level configuration is **shared across all staff** and defines how OA Compass Admin behaves in a specific Alma environment. Configuration values directly influence OA and Alma behavior and therefore must be tightly controlled.
+Institution-level configuration is **shared across all staff users** and defines how
+OA Compass Admin behaves within a specific Alma environment.
 
-### **Canonical Config Keys**
+These values directly influence OpenAthens and Alma operations and therefore must be
+**centrally managed and tightly controlled**.
+
+### **Canonical Configuration Keys**
 
 The following keys are authoritative for OA Compass Admin:
 
-* `proxyBaseUrl`
-  The HTTPS base URL for the OA Node proxy (e.g. `https://apps.lib.example.edu/oa-proxy`).
+* **`proxyBaseUrl`**
+  HTTPS base URL for the OA Node.js proxy
+  (e.g. `https://apps.lib.example.edu/oa-proxy`)
 
-* `oaIdTypeCode`
-  Alma identifier type code used to store the OpenAthens username (e.g. `"02"`).
+* **`oaIdTypeCode`**
+  Alma identifier type code used when reading or writing OA usernames.
+  This value is treated as an **opaque string** and may include letters or numbers.
 
-* `primaryField`
-  Primary OA username storage location in Alma. Allowed values (as defined in CCR):
+* **`disallowedEmailDomain`**
+  Optional email domain (without `@`) for which OA provisioning is skipped
+  (e.g. `example.edu`).
+  If empty or unset, no exclusion is applied.
+
+* **`oaPrimaryField`**
+  Primary Alma field used to store the OA username.
+  Allowed values (as defined in the CCR):
 
   * `job_description`
-  * `identifier` (conceptually: identifier with type = `oaIdTypeCode`)
+  * `identifier02` (meaning “identifier using `oaIdTypeCode`”)
   * `user_note`
 
-* `secondaryField`
-  Optional secondary OA username storage location. Allowed values:
+* **`oaSecondaryField`**
+  Optional secondary Alma field for OA username storage.
+  Allowed values:
 
   * `none`
   * `job_description`
-  * `identifier`
+  * `identifier02`
   * `user_note`
 
 ### **Configuration Responsibilities**
 
-* Define where OA usernames are written in Alma after successful workflows.
-* Define which identifier type corresponds to OA usernames.
-* Define which proxy endpoint the Cloud App uses for OA operations.
+Institution-level configuration determines:
 
-Configuration must be **consistent for all users** in the institution. Changes to configuration affect all staff using OA Compass Admin.
+* Which Alma fields may receive OA usernames
+* Which identifier type code is used for identifier-based storage
+* Whether OA provisioning is skipped for specific email domains
+* Which proxy endpoint is used for all OA API operations
+
+All staff users operate under the **same configuration**.
+
+Changes take effect immediately and apply globally.
+
+---
+
+### **Email Domain Exclusion Rule**
+
+If `disallowedEmailDomain` is configured and matches a user’s email:
+
+* OA Create is skipped
+* OA Sync is skipped
+* No OA username is written to Alma
+* A user-visible status message explains why provisioning was skipped
+
+This supports environments where OA access is managed entirely via
+SSO or federated identity providers.
+
+---
 
 ### **Validation Rules**
 
-* `proxyBaseUrl` **must** be a valid URL.
+* `proxyBaseUrl`
 
-  * In production, it **must** use `https://`.
-  * In development, `http://localhost` may be allowed.
-* `oaIdTypeCode` must be a non-empty Alma identifier type code.
-* `primaryField` and `secondaryField` must be one of the allowed enumerated values.
-* If configuration is missing or invalid:
+  * Must be a valid URL
+  * Must use `https://` in production
 
-  * The UI must clearly indicate misconfiguration.
-  * OA workflows (Create/Sync/Resend) must be disabled until fixed.
+* `oaIdTypeCode`
+
+  * Must be non-empty
+  * Is not required to be numeric
+
+* `oaPrimaryField` / `oaSecondaryField`
+
+  * Must be one of the enumerated CCR values
+
+If configuration is missing or invalid:
+
+* The UI must indicate misconfiguration
+* OA workflows (Create / Sync / Resend) must be disabled
+
+---
 
 ### **Security Constraints**
 
 The following **must never** be stored in Cloud App configuration:
 
 * OA API keys or secrets
-* OA tenant internal credentials
-* Group mapping tables (e.g. `GROUP_MAP` / `CODE_TO_KEY`)
-* Any environment variables belonging to the Node proxy
+* OA tenant credentials
+* Proxy environment variables
+* Group mapping tables
+* Any value required exclusively by the Node.js proxy
 
-These values live **only on the proxy host**, in environment variables or secure server-side configuration.
+All sensitive values live **only on the proxy host**, outside the Cloud App runtime.
 
 ---
 
 ## **6.3 Manifest Integration**
 
-Both user-level settings and institution-level configuration are declared in the Cloud App `manifest.json`:
+Both user settings and institution configuration are declared in `manifest.json`:
 
-* `settings` section → user preferences (CloudAppSettingsService)
-* `configuration` section → institutional OA settings (CloudAppConfigService)
+* `settings` → user-level UI preferences
+* `configuration` → institution-level OA behavior
 
 The manifest must:
 
-* Define each setting/config item with a stable key.
-* Provide suitable labels, descriptions, and defaults.
-* Match the keys and types described in this SDD and the CCR.
+* Declare stable keys with clear labels and descriptions
+* Match the keys and types defined in this SDD and the CCR
+* Provide safe defaults
 
-Any new setting or configuration option must be added to **all** of:
+Any new key must be added to **all three** before use:
 
-1. SDD (this section)
-2. CCR (as a canonical key/type)
-3. `manifest.json` (for Cloud App runtime)
-
-before being used in code.
+1. This SDD
+2. CCR
+3. `manifest.json`
 
 ---
 
 ## **6.4 Design Rationale**
 
-This split between settings and configuration ensures that:
+This strict separation ensures that:
 
-* Individual staff can tailor the UI to their preferences without affecting OA behavior.
-* OA- and Alma-related rules are centrally managed and consistent.
-* Sensitive or policy-critical configuration is never fragmented across users.
-* Multi-staff teams can rely on the same OA provisioning behavior.
+* OA behavior is predictable and institutionally consistent
+* Staff users cannot accidentally alter provisioning rules
+* Security-sensitive decisions are centralized
+* UI preferences remain flexible and non-destructive
 
-By enforcing these rules, OA Compass Admin remains predictable, secure, and easy to support across changing staff and environments.
+By enforcing these boundaries, OA Compass Admin remains:
+
+* Auditable
+* Secure
+* Easy to support
+* Safe for multi-staff environments
 
 ---
 

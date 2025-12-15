@@ -537,140 +537,230 @@ type OASecondaryField = 'none' | 'job_description' | 'identifier' | 'user_note';
 
 ---
 
-# **4. Canonical Config Structures**
+# **4. Canonical Configuration & Settings Structures**
 
-This section defines the **only permitted configuration and settings structures** in OA Compass Admin.
-These types appear in `CloudAppSettingsService`, `CloudAppConfigService`, and any internal logic that reads/writes settings or config.
-No additional config keys or structures may be introduced without updating the SDD + CCR + manifest.
+This section defines the **only permitted configuration and settings structures** in **OA Compass Admin**.
+
+These structures are authoritative and are used by:
+
+* `CloudAppSettingsService` (user-level preferences)
+* `CloudAppConfigService` (institution-level configuration)
+* All OA workflow and Alma write-back logic
+
+⚠️ **No new config keys or settings may be introduced** without updating **all three** of:
+
+* SDD
+* CCR (this document)
+* `manifest.json`
 
 ---
 
-# **4.1 User‑Level Settings (CloudAppSettingsService)**
+## **4.1 User-Level Settings (CloudAppSettingsService)**
 
-User settings are *per‑staff‑member preferences*. They **must not** affect OA provisioning logic, Alma write‑back behavior, or proxy configuration.
+User-level settings are **per-staff-member UI preferences only**.
+They **must not** affect OA provisioning logic, Alma write-back behavior, or institutional policy.
 
 ```ts
-export interface OAUserSettings {
-  showDebugPanel: boolean;   // Toggles visibility of debug output panel
+export interface OACompassSettings {
+  /**
+   * Whether the debug / proxy response panel is visible by default.
+   * UI-only preference.
+   */
+  showDebugPanel: boolean;
 }
 ```
 
-### **Canonical Default Settings**
+### **Canonical Default User Settings**
 
 ```ts
-export const DEFAULT_OA_USER_SETTINGS: OAUserSettings = {
-  showDebugPanel: false
+export const DEFAULT_OA_SETTINGS: OACompassSettings = {
+  showDebugPanel: true
 };
 ```
 
 ### **Rules**
 
-* Must contain **only UI preferences**.
-* Must not contain:
+User settings:
 
-  * Identifier type codes
+* ✅ May control **UI visibility or layout**
+* ❌ Must not contain:
+
+  * Alma identifier type codes
   * Proxy URLs
-  * OA username rules
-  * Anything influencing workflows
+  * OA username storage rules
+  * Email domain exclusions
+  * Anything that changes Create / Sync / Resend behavior
+
+User settings are safe to reset per staff member without affecting others.
 
 ---
 
-# **4.2 Institution‑Level Configuration (CloudAppConfigService)**
+## **4.2 Institution-Level Configuration (CloudAppConfigService)**
 
-Configuration applies to the entire Alma institution and affects **OA + Alma workflow behavior**.
+Institution-level configuration applies to **all staff** and directly affects **OA and Alma workflows**.
 
 ```ts
-export interface OAInstitutionConfig {
-  proxyBaseUrl: string;             // HTTPS endpoint of Node proxy
-  oaIdTypeCode: string;             // Alma identifier type for OA username storage
-  primaryField: OAUsernameField;    // job_description | identifier | user_note
-  secondaryField: OASecondaryField; // none | job_description | identifier | user_note
+export interface OACompassConfig {
+  /**
+   * HTTPS base URL of the OA Node.js proxy.
+   * Example: https://apps.lib.example.edu/oa-proxy
+   */
+  proxyBaseUrl: string;
+
+  /**
+   * Alma identifier type code used to store OA usernames.
+   * Treated as an opaque string (may include letters or numbers).
+   * Examples: "02", "OA", "IDP"
+   */
+  oaIdTypeCode: string;
+
+  /**
+   * Optional email domain for which OA account creation
+   * and sync must be skipped.
+   * Example: "example.edu" (no "@").
+   */
+  disallowedEmailDomain?: string;
+
+  /**
+   * Primary Alma field used to store the OA username.
+   */
+  oaPrimaryField: OAUsernameField;
+
+  /**
+   * Optional secondary Alma field used to store the OA username.
+   */
+  oaSecondaryField: OASecondaryField;
 }
 ```
 
-### **Canonical Default Config (used only when fields are absent)**
+### **Canonical Default Config (used only when values are absent)**
 
 ```ts
-export const DEFAULT_OA_INSTITUTION_CONFIG: OAInstitutionConfig = {
+export const DEFAULT_OA_COMPASS_CONFIG: OACompassConfig = {
   proxyBaseUrl: '',
-  oaIdTypeCode: '',
-  primaryField: 'job_description',
-  secondaryField: 'none'
+  oaIdTypeCode: '02',
+  disallowedEmailDomain: '',
+  oaPrimaryField: 'job_description',
+  oaSecondaryField: 'identifier02'
 };
 ```
 
 ### **Rules**
 
-* `proxyBaseUrl` **must** be HTTPS except for localhost dev.
-* `oaIdTypeCode` must be a valid Alma identifier type.
-* `primaryField` and `secondaryField` must match the canonical unions.
-* No secrets may be stored here.
+* `proxyBaseUrl`
+
+  * Must be HTTPS in production
+  * `http://localhost` allowed only for development
+* `oaIdTypeCode`
+
+  * Must be non-empty
+  * Treated as opaque (no numeric assumptions)
+* `oaPrimaryField` / `oaSecondaryField`
+
+  * Must match canonical unions
+* **No secrets may ever be stored here**
 
 ---
 
-# **4.3 Canonical Type Aliases (SDD‑Aligned)**
+## **4.3 Canonical Type Aliases (Authoritative)**
 
-These define allowed Alma write‑back targets.
-Used by AlmaUserService and OAWorkflowService.
+These types define **all allowed Alma write-back targets** and are used by
+`AlmaUserService` and `OAWorkflowService`.
 
-```ts
-type OAUsernameField = 'job_description' | 'identifier' | 'user_note';
-```
+### **OAUsernameField**
 
 ```ts
-type OASecondaryField = 'none' | 'job_description' | 'identifier' | 'user_note';
+export type OAUsernameField =
+  | 'job_description'
+  | 'identifier02'
+  | 'user_note';
 ```
 
-### **Notes**
-
-* `identifier` corresponds to the configured `oaIdTypeCode`.
-* `secondaryField` must be `'none'` or a valid primary field.
+> **Important:**
+> `'identifier02'` is a **semantic placeholder**, meaning
+> “use Alma identifier with type = `oaIdTypeCode`”.
 
 ---
 
-# **4.4 Canonical Settings + Config Access Pattern**
-
-All Angular code must use the following pattern:
-
-### **Settings (per‑user)**
+### **OASecondaryField**
 
 ```ts
-this.settingsService.get().subscribe((s: OAUserSettings) => { ... });
-```
-
-### **Config (institution‑level)**
-
-```ts
-this.configService.get().subscribe((cfg: OAInstitutionConfig) => { ... });
+export type OASecondaryField =
+  | 'none'
+  | OAUsernameField;
 ```
 
 ### **Rules**
 
-* All screens that depend on config must disable OA actions until config is valid.
-* UI components must never cache settings/config outside StateService.
+* Secondary field must be `'none'` or a valid primary field
+* Identifier storage behavior is always governed by `oaIdTypeCode`
 
 ---
 
-# **4.5 Manifest Alignment Requirements**
+## **4.4 Canonical Settings & Config Access Pattern**
 
-The following keys must appear in `manifest.json`:
+All Angular code must follow this access pattern:
 
-### **User Settings Keys**
+### **User Settings (per-user)**
+
+```ts
+this.settingsService.get().subscribe((settings: OACompassSettings) => {
+  ...
+});
+```
+
+### **Institution Config**
+
+```ts
+this.configService.get().subscribe((config: OACompassConfig) => {
+  ...
+});
+```
+
+### **Rules**
+
+* OA actions must be **disabled** until required config is loaded and valid
+* UI components must **not** invent local copies of config or settings
+* Long-lived state belongs in `StateService`, not component fields
+
+---
+
+## **4.5 Email Domain Exclusion Semantics**
+
+If `disallowedEmailDomain` is configured and matches a user’s email:
+
+* OA **Create** must be skipped
+* OA **Sync** must be skipped
+* OA username **must not** be written to Alma
+* A clear, user-visible explanation must be shown
+* No OA API calls may be made for that workflow
+
+This rule is enforced **before** any OA workflow logic runs.
+
+---
+
+## **4.6 Manifest Alignment Requirements**
+
+The following keys **must appear** in `manifest.json` and match exactly:
+
+### **User Settings**
 
 * `showDebugPanel`
 
-### **Institution Config Keys**
+### **Institution Configuration**
 
 * `proxyBaseUrl`
 * `oaIdTypeCode`
-* `primaryField`
-* `secondaryField`
+* `disallowedEmailDomain`
+* `oaPrimaryField`
+* `oaSecondaryField`
 
-These must match exactly in:
+These keys must remain consistent across:
 
-* SDD (Section 6)
-* CCR (this section)
-* Code (ConfigComponent, SettingsComponent)
+1. SDD (Section 6)
+2. CCR (this section)
+3. Code (`ConfigComponent`, `SettingsComponent`)
+4. `manifest.json`
 
 ---
 
