@@ -12,7 +12,8 @@
       "resend": "Resend",
       "create": "Create",
       "sync": "Sync",
-      "save": "Save"
+      "save": "Save",
+      "cancel": "Cancel"
     },
     "search": {
       "noResults": "No results found.",
@@ -58,7 +59,9 @@
       "resending": "Resending activation…",
       "resendFailed": "Resend activation failed",
       "resendSuccess": "Activation email resent.",
-      "resendMissingEmail": "Cannot resend activation: missing email."
+      "resendMissingEmail": "Cannot resend activation: missing email.",
+      "createBlockedByDomain": "Create skipped: users from {{domain}} should authenticate via the University IDP.",
+      "syncSkippedByDomain": "Sync skipped: users from {{domain}} should authenticate via the University IDP."
     },
     "debug": {
       "panelTitle": "Debug"
@@ -87,11 +90,23 @@
       "proxyTitle": "Proxy connection",
       "proxyHelp": "Configure how the Cloud App reaches your hardened OA proxy. This should be the Apache URL that reverse-proxies to the Node.js service listening on 127.0.0.1:8081.",
       "proxyBaseUrlLabel": "Proxy base URL",
+
       "usernameStorageTitle": "OA username storage",
       "usernameStorageHelp": "Choose how Alma should store the OpenAthens username when accounts are created or synced. These settings apply to all OA Compass Admin users in this Alma environment.",
+
       "oaIdTypeCodeLabel": "OA identifier type code",
+      "oaIdTypeCodeHelp": "This is the Alma Identifier Type code (e.g. \"02\") used when writing/reading the OA username in an Identifier field.",
+
       "primaryFieldLabel": "Primary OA username field",
       "secondaryFieldLabel": "Secondary OA username field (optional)",
+
+      "domainRulesTitle": "Account creation rules",
+      "domainRulesHelp": "Optionally block OA account creation for users whose email domain is managed by your institutional identity provider (IDP).",
+      "disallowedEmailDomainLabel": "Disallowed email domain (skip OA create)",
+      "disallowedEmailDomainPlaceholder": "iastate.edu",
+      "disallowedEmailDomainHelp": "If set, OA Compass Admin will not create local OpenAthens accounts for users with emails ending in @this-domain.",
+      "emailExclusionTitle": "Email domain exclusion",
+      "emailExclusionHelp": "If a user's email domain matches this value, OA Compass will NOT create a local OpenAthens account for them (use this for SSO/IDP-managed accounts). Leave blank to disable.",
       "savedMessage": "Configuration saved."
     },
     "provision": {

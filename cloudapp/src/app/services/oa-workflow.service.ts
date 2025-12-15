@@ -42,12 +42,9 @@ export class OAWorkflowService {
     user: AlmaUser | null,
     selectedUserId: string | null
   ): Promise<OAWorkflowResult> {
-    // Same guard pattern as other workflows
+
     if (!user && !selectedUserId) {
-      return {
-        statusText: '',
-        needsReload: false
-      };
+      return { statusText: '', needsReload: false };
     }
 
     // Use email as the canonical handle for resend
@@ -64,8 +61,6 @@ export class OAWorkflowService {
     const payload: OAResendRequest = { email };
 
     try {
-      // Your typed wrapper:
-      // resendActivation(payload: OAResendRequest): Promise<OAResendResponse>
       const resp: OAResendResponse = await this.oa.resendActivation(payload);
 
       return {
@@ -76,10 +71,7 @@ export class OAWorkflowService {
 
     } catch (err: any) {
       const handled = this.handleNotFoundLikeError(err);
-      if (handled) {
-        // e.g., “No OA account found”
-        return handled;
-      }
+      if (handled) return handled;
 
       const errBody = err?.error;
       return {
@@ -102,12 +94,23 @@ export class OAWorkflowService {
     primaryField: OAUsernameField,
     secondaryField: OASecondaryField
   ): Promise<OAWorkflowResult> {
+
     const pid = user?.primary_id || selectedUserId || '';
 
-    // Mirror existing guard in MainComponent (caller also checks)
     if (!user && !selectedUserId) {
+      return { statusText: '', needsReload: false };
+    }
+
+    // 0) Block create for configured disallowed domains (IDP users)
+    const email = this.alma.getEmail(user) ?? '';
+    if (this.oa.isEmailCreationBlocked(email)) {
+      // If you haven't added this i18n key yet, the fallback string still shows.
+      const msg =
+        this.translate.instant('oa.status.createBlockedByDomain', { email }) ||
+        'OA account not created: user belongs to an excluded email domain.';
       return {
-        statusText: '',
+        statusText: msg,
+        proxyDebugText: email ? `Blocked by email/domain rule: ${email}` : 'Blocked by email/domain rule.',
         needsReload: false
       };
     }
@@ -140,7 +143,7 @@ export class OAWorkflowService {
       let debug = JSON.stringify(res, null, 2);
 
       // OA now returns the actual username it generated
-      let oaUsername =
+      const oaUsername =
         (res as any)?.summary?.username ||
         (res as any)?.raw?.username ||
         pid;
@@ -148,45 +151,32 @@ export class OAWorkflowService {
       let status: string;
 
       if ((res as any).created) {
-        // Created successfully
-        if (oaUsername) {
-          status = this.translate.instant('oa.status.createSuccessWithUser', {
-            username: oaUsername
-          });
-        } else {
-          status = this.translate.instant('oa.status.createSuccess');
-        }
+        status = oaUsername
+          ? this.translate.instant('oa.status.createSuccessWithUser', { username: oaUsername })
+          : this.translate.instant('oa.status.createSuccess');
+
       } else if ((res as any).alreadyExists) {
-        // Already exists branch
         const reason =
           (res as any).reason ||
-          'An account already exists for this user.'; // keep as raw English reason
+          'An account already exists for this user.';
 
-        if (oaUsername) {
-          status = this.translate.instant('oa.status.createAlreadyExistsWithUser', {
-            username: oaUsername
-          });
-        } else {
-          status = this.translate.instant('oa.status.createAlreadyExists');
-        }
+        status = oaUsername
+          ? this.translate.instant('oa.status.createAlreadyExistsWithUser', { username: oaUsername })
+          : this.translate.instant('oa.status.createAlreadyExists');
 
-        if (reason) {
-          status += ` — ${reason}`;
-        }
+        if (reason) status += ` — ${reason}`;
+
       } else {
-        // Generic “not created” branch
         const reason =
           (res as any).reason ||
           this.translate.instant('oa.status.createFailed');
 
-        status = this.translate.instant('oa.status.createNotCreated', {
-          reason
-        });
+        status = this.translate.instant('oa.status.createNotCreated', { reason });
       }
 
       let needsReload = false;
 
-      // 4) If we have an OA username, try to write it back to Alma
+      // 3) If we have an OA username, try to write it back to Alma
       if (oaUsername && pid) {
         try {
           await this.alma.writeBackOAUsernameBoth(
@@ -199,7 +189,6 @@ export class OAWorkflowService {
           status += ' ' + this.translate.instant('oa.status.suffixSavedToAlma');
           needsReload = true;
         } catch (almaErr: any) {
-          // Keep the OA success message, annotate Alma failure, and append error to debug text.
           const msg =
             almaErr?.message ||
             this.translate.instant('oa.status.almaUpdateFailed');
@@ -216,7 +205,6 @@ export class OAWorkflowService {
       };
 
     } catch (e: any) {
-      // Only OA/proxy-level failures should end up here.
       const statusCode = e?.status;
       const errBody = e?.error;
       const rawMsg = errBody
@@ -225,7 +213,6 @@ export class OAWorkflowService {
 
       const lower = rawMsg.toLowerCase();
 
-      // Mirror “already exists” heuristic from previous MainComponent
       if (
         (statusCode === 400 || statusCode === 409) &&
         (lower.includes('already exist') ||
@@ -260,22 +247,19 @@ export class OAWorkflowService {
     primaryField: OAUsernameField,
     secondaryField: OASecondaryField
   ): Promise<OAWorkflowResult> {
+
     const pid = user?.primary_id || selectedUserId || '';
 
-    // Mirror existing guard: caller also checks this.
     if (!user && !selectedUserId) {
-      return {
-        statusText: '',
-        needsReload: false
-      };
+      return { statusText: '', needsReload: false };
     }
 
     try {
       // 1) Try to find an existing OA account by known identifiers
-      let got = await this.findOAAccount(user);
+      let got = await this.findOAAccount(user, oaIdTypeCode);
       let oaUsername =
         got?.account?.username ||
-        got?.normalizedUsername ||
+        (got as any)?.normalizedUsername ||
         '';
 
       // 2) If nothing found, attempt a modify using Alma data to (re)sync OA
@@ -322,17 +306,17 @@ export class OAWorkflowService {
           alma_group_code
         };
 
-        // Handle 404 / OA_NOT_FOUND specially
         try {
           const modRes = await this.oa.modifyAccount(modifyPayload);
-          // Keep entire modify response for debugging
           const debug = JSON.stringify(modRes, null, 2);
+
           // After modify, re-query OA to confirm the account
-          got = await this.findOAAccount(user);
+          got = await this.findOAAccount(user, oaIdTypeCode);
           oaUsername =
             got?.account?.username ||
-            got?.normalizedUsername ||
+            (got as any)?.normalizedUsername ||
             '';
+
           if (!oaUsername) {
             return {
               statusText: this.translate.instant('oa.status.noOAFound'),
@@ -342,10 +326,7 @@ export class OAWorkflowService {
           }
         } catch (err: any) {
           const handled = this.handleNotFoundLikeError(err);
-          if (handled) {
-            return handled;
-          }
-          // Anything else -> treat as generic sync failure
+          if (handled) return handled;
           throw err;
         }
       }
@@ -354,11 +335,7 @@ export class OAWorkflowService {
       if (!oaUsername) {
         return {
           statusText: this.translate.instant('oa.status.noOAFound'),
-          proxyDebugText: JSON.stringify(
-            got ?? { found: false },
-            null,
-            2
-          ),
+          proxyDebugText: JSON.stringify(got ?? { found: false }, null, 2),
           needsReload: false
         };
       }
@@ -367,11 +344,7 @@ export class OAWorkflowService {
       let status = this.translate.instant('oa.status.syncSuccessWithUser', {
         username: oaUsername
       });
-      let debug = JSON.stringify(
-        { account: got?.account },
-        null,
-        2
-      );
+      let debug = JSON.stringify({ account: got?.account }, null, 2);
       let needsReload = false;
 
       try {
@@ -400,7 +373,6 @@ export class OAWorkflowService {
       };
 
     } catch (e: any) {
-      // Generic OA/proxy-level errors that weren’t handled specially
       const statusCode = e?.status;
       const errBody = e?.error;
       const rawMsg = errBody
@@ -437,11 +409,12 @@ export class OAWorkflowService {
   // -----------------------------
 
   private async findOAAccount(
-    user: AlmaUser | null
+    user: AlmaUser | null,
+    oaIdTypeCode: string
   ): Promise<OAGetResponse | null> {
-    // Reuse existing helper on OAProxyService, as in your MainComponent.
-    // If that method’s signature ever changes, adjust here.
-    return this.oa.findAccountByAlmaUser(user, this.alma);
+    // Prefer OA username in Alma identifiers using configured id type code
+    // (then email, then primary_id) — handled by OAProxyService helper
+    return this.oa.findAccountByAlmaUser(user, this.alma, oaIdTypeCode as any);
   }
 
   /**

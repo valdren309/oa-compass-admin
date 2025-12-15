@@ -1,5 +1,3 @@
-<!-- src/app/components/config/config.component.html -->
-
 <mat-card class="config-card oa-config-root">
   <mat-card-title class="config-title-row">
     <span>{{ 'oa.config.title' | translate }}</span>
@@ -14,9 +12,7 @@
     </div>
 
     <!-- Main form -->
-    <form
-      class="config-form"
-      *ngIf="!loading">
+    <form class="config-form" *ngIf="!loading">
 
       <!-- Proxy / connection settings -->
       <section class="config-section">
@@ -29,14 +25,33 @@
 
         <div class="config-grid">
           <mat-form-field appearance="fill">
-            <mat-label>
-              {{ 'oa.config.proxyBaseUrlLabel' | translate }}
-            </mat-label>
+            <mat-label>{{ 'oa.config.proxyBaseUrlLabel' | translate }}</mat-label>
             <input
               matInput
               [(ngModel)]="config.proxyBaseUrl"
               name="proxyBaseUrl"
               placeholder="https://app.lib.iastate.edu/oa-proxy">
+          </mat-form-field>
+        </div>
+      </section>
+
+      <!-- Email exclusion (institution-wide) -->
+      <section class="config-section">
+        <h3 class="config-section__title">
+          {{ 'oa.config.emailExclusionTitle' | translate }}
+        </h3>
+        <p class="config-section__help">
+          {{ 'oa.config.emailExclusionHelp' | translate }}
+        </p>
+
+        <div class="config-grid">
+          <mat-form-field appearance="fill">
+            <mat-label>{{ 'oa.config.disallowedEmailDomainLabel' | translate }}</mat-label>
+            <input
+              matInput
+              [(ngModel)]="config.disallowedEmailDomain"
+              name="disallowedEmailDomain"
+              placeholder="iastate.edu">
           </mat-form-field>
         </div>
       </section>
@@ -54,27 +69,20 @@
 
           <!-- OA identifier type code -->
           <mat-form-field appearance="fill">
-            <mat-label>
-              {{ 'oa.config.oaIdTypeCodeLabel' | translate }}
-            </mat-label>
+            <mat-label>{{ 'oa.config.oaIdTypeCodeLabel' | translate }}</mat-label>
             <input
               matInput
-              [(ngModel)]="config.oaIdTypeCode"
+              [ngModel]="config.oaIdTypeCode"
+              (ngModelChange)="onIdTypeCodeChanged($event)"
               name="oaIdTypeCode"
               placeholder="02">
           </mat-form-field>
 
           <!-- Primary field -->
           <mat-form-field appearance="fill">
-            <mat-label>
-              {{ 'oa.config.primaryFieldLabel' | translate }}
-            </mat-label>
-            <mat-select
-              [(ngModel)]="config.oaPrimaryField"
-              name="oaPrimaryField">
-              <mat-option
-                *ngFor="let opt of primaryFieldOptions"
-                [value]="opt.value">
+            <mat-label>{{ 'oa.config.primaryFieldLabel' | translate }}</mat-label>
+            <mat-select [(ngModel)]="config.oaPrimaryField" name="oaPrimaryField">
+              <mat-option *ngFor="let opt of primaryFieldOptions" [value]="opt.value">
                 {{ opt.label }}
               </mat-option>
             </mat-select>
@@ -82,15 +90,9 @@
 
           <!-- Secondary field -->
           <mat-form-field appearance="fill">
-            <mat-label>
-              {{ 'oa.config.secondaryFieldLabel' | translate }}
-            </mat-label>
-            <mat-select
-              [(ngModel)]="config.oaSecondaryField"
-              name="oaSecondaryField">
-              <mat-option
-                *ngFor="let opt of secondaryFieldOptions"
-                [value]="opt.value">
+            <mat-label>{{ 'oa.config.secondaryFieldLabel' | translate }}</mat-label>
+            <mat-select [(ngModel)]="config.oaSecondaryField" name="oaSecondaryField">
+              <mat-option *ngFor="let opt of secondaryFieldOptions" [value]="opt.value">
                 {{ opt.label }}
               </mat-option>
             </mat-select>
@@ -101,18 +103,11 @@
 
       <!-- Actions -->
       <div class="oa-footer-actions">
-        <button
-          mat-flat-button
-          type="button"
-          (click)="onCancel()">
+        <button mat-flat-button type="button" (click)="onCancel()">
           Cancel
         </button>
 
-        <button
-          mat-flat-button
-          color="primary"
-          type="button"
-          (click)="onSave()">
+        <button mat-flat-button color="primary" type="button" (click)="onSave()">
           Save
         </button>
       </div>
@@ -126,7 +121,7 @@
           {{ error }}
         </span>
       </div>
-    </form>
 
+    </form>
   </mat-card-content>
 </mat-card>

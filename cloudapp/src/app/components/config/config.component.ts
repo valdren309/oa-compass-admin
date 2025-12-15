@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
-import { CloudAppConfigService } from '@exlibris/exl-cloudapp-angular-lib';
 import { Router } from '@angular/router';
+import { CloudAppConfigService } from '@exlibris/exl-cloudapp-angular-lib';
+import { take } from 'rxjs/operators';
 
 import {
   OAUsernameField,
@@ -15,15 +16,15 @@ export interface OACompassConfig {
   oaIdTypeCode: string;
 
   /**
-   * Primary Alma field where the OA username is written when
-   * accounts are created/synced.
+   * Email domain that should NOT get a local OA account created.
+   * Example: "iastate.edu" (no @).
    */
+  disallowedEmailDomain?: string;
+
+  /** Primary Alma field where the OA username is written */
   oaPrimaryField: OAUsernameField;
 
-  /**
-   * Optional secondary field for the OA username. Use "none"
-   * to disable the secondary location.
-   */
+  /** Optional secondary field for the OA username */
   oaSecondaryField: OASecondaryField;
 }
 
@@ -34,17 +35,10 @@ export interface OACompassConfig {
 })
 export class ConfigComponent implements OnInit {
 
-  /**
-   * Institution-level configuration object.
-   *
-   * NOTE:
-   * - We intentionally do NOT include anything OA-secret here.
-   * - Tenant ID, API key, OA_BASE_URL, etc. live in the proxy's
-   *   environment (.env / systemd), not in the Cloud App.
-   */
   config: OACompassConfig = {
     proxyBaseUrl: '',
     oaIdTypeCode: '02',
+    disallowedEmailDomain: '',
     oaPrimaryField: 'job_description',
     oaSecondaryField: 'identifier02',
   };
@@ -54,19 +48,9 @@ export class ConfigComponent implements OnInit {
   error?: string;
   saved = false;
 
-  // Options for the OA username storage selects
-  primaryFieldOptions: Array<{ value: OAUsernameField; label: string }> = [
-    { value: 'job_description', label: 'Job description' },
-    { value: 'identifier02',   label: 'Identifier 02' },
-    { value: 'user_note',      label: 'User note' },
-  ];
-
-  secondaryFieldOptions: Array<{ value: OASecondaryField; label: string }> = [
-    { value: 'none',            label: 'None' },
-    { value: 'job_description', label: 'Job description' },
-    { value: 'identifier02',    label: 'Identifier 02' },
-    { value: 'user_note',       label: 'User note' },
-  ];
+  // ✅ Stable option arrays (NOT getters)
+  primaryFieldOptions: Array<{ value: OAUsernameField; label: string }> = [];
+  secondaryFieldOptions: Array<{ value: OASecondaryField; label: string }> = [];
 
   constructor(
     private configService: CloudAppConfigService,
@@ -78,46 +62,82 @@ export class ConfigComponent implements OnInit {
     this.error = undefined;
     this.saved = false;
 
-    this.configService.get().subscribe({
+    this.configService.get().pipe(take(1)).subscribe({
       next: (cfg: any) => {
-        // Merge stored config with defaults. Any legacy keys
-        // like "usernamePrefix" will simply be ignored.
-        this.config = {
-          ...this.config,
-          ...(cfg || {}),
-        };
+        const stored = (cfg || {}) as Partial<OACompassConfig>;
+        this.config = { ...this.config, ...stored };
+
+        // Normalize immediately so UI + saving are consistent
+        this.config.oaIdTypeCode = this.normalizeIdTypeCode(this.config.oaIdTypeCode);
+        this.config.disallowedEmailDomain = (this.config.disallowedEmailDomain || '').trim();
+
+        this.rebuildFieldOptions();
         this.loading = false;
       },
       error: (e) => {
         this.error = e?.message || 'Failed to load configuration';
+        this.rebuildFieldOptions(); // still build defaults
         this.loading = false;
       },
     });
   }
 
-  /**
-   * Cancel: discard unsaved changes and return to main state.
-   */
+  onIdTypeCodeChanged(value: string): void {
+    // Allow letters + numbers; just trim and keep stable
+    this.config.oaIdTypeCode = this.normalizeIdTypeCode(value);
+    this.rebuildFieldOptions();
+  }
+
+  private normalizeIdTypeCode(raw: any): string {
+    const s = (raw ?? '').toString().trim();
+    // Allow alphanumeric + underscore + hyphen
+    return s.replace(/[^a-zA-Z0-9_-]/g, '');
+    }
+
+  private rebuildFieldOptions(): void {
+    const code = this.normalizeIdTypeCode(this.config.oaIdTypeCode);
+
+    // ✅ User request: show ONLY the configured code (no "Identifier XX" label)
+    const identifierLabel = code;
+
+    // NOTE: value stays 'identifier02' because your field-choice model is still
+    // "identifier02" (meaning "identifier by configured type code").
+    this.primaryFieldOptions = [
+      { value: 'job_description', label: 'Job description' },
+      { value: 'identifier02',    label: identifierLabel },
+      { value: 'user_note',       label: 'User note' },
+    ];
+
+    this.secondaryFieldOptions = [
+      { value: 'none',            label: 'None' },
+      { value: 'job_description', label: 'Job description' },
+      { value: 'identifier02',    label: identifierLabel },
+      { value: 'user_note',       label: 'User note' },
+    ];
+  }
+
   onCancel(): void {
     this.router.navigate(['']);
   }
 
   onSave(): void {
     if (this.saving) return;
+
     this.saving = true;
     this.error = undefined;
     this.saved = false;
 
     const toSave: OACompassConfig = {
       ...this.config,
+      oaIdTypeCode: this.normalizeIdTypeCode(this.config.oaIdTypeCode),
+      disallowedEmailDomain: (this.config.disallowedEmailDomain || '').trim(),
     };
 
-    this.configService.set(toSave).subscribe({
+    this.configService.set(toSave).pipe(take(1)).subscribe({
       next: () => {
         this.saving = false;
         this.saved = true;
         this.config = toSave;
-        // After a successful save, return to the main view
         this.router.navigate(['']);
       },
       error: (e) => {
@@ -131,9 +151,11 @@ export class ConfigComponent implements OnInit {
     this.config = {
       proxyBaseUrl: '',
       oaIdTypeCode: '02',
+      disallowedEmailDomain: '',
       oaPrimaryField: 'job_description',
       oaSecondaryField: 'identifier02',
     };
+    this.rebuildFieldOptions();
     this.error = undefined;
     this.saved = false;
   }

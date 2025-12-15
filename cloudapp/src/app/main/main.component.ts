@@ -18,6 +18,7 @@ import { AlmaUserService } from '../services/alma-user.service';
 import { firstValueFrom } from 'rxjs';
 import { StateService } from '../services/state.service';
 import { OAWorkflowService } from '../services/oa-workflow.service';
+import { OAProxyService } from '../services/oa-proxy.service';
 
 @Component({
   selector: 'app-main',
@@ -37,7 +38,8 @@ export class MainComponent implements OnInit {
   showConfig = false;
   searchCollapsed = false;
   userCollapsed = false;
-  // Removed unused proxyBase (all proxy usage is via OAProxyService)
+
+  // Alma identifier type code used for identifier lookups (e.g. "02")
   oaIdTypeCode = '02'; // default, overridden by config.oaIdTypeCode
 
   // ==== entity state ====
@@ -73,7 +75,6 @@ export class MainComponent implements OnInit {
   actionStatus = '';
 
   // ==== OA state ====
-  // Currently not populated anywhere, but kept for forward-compat
   oaUsername: string | null = null;
 
   constructor(
@@ -84,7 +85,8 @@ export class MainComponent implements OnInit {
     private entityContext: EntityContextService,
     private alma: AlmaUserService,
     private state: StateService,
-    private oaWorkflow: OAWorkflowService
+    private oaWorkflow: OAWorkflowService,
+    private oaProxy: OAProxyService,
   ) {
     this.busy$ = this.state.getBusy();
     this.lastProxyResponse$ = this.state.getLastProxyResponse();
@@ -99,7 +101,7 @@ export class MainComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    // Load institution-level config first (primary/secondary fields + default debug)
+    // Load institution-level config first (primary/secondary fields + default debug + idType)
     this.loadSettingsAndPreferences();
 
     // Watch entity context to enable Option A behavior
@@ -141,7 +143,7 @@ export class MainComponent implements OnInit {
   }
 
   /**
-   * Phase 4 settings/config load:
+   * Phase 4+ settings/config load:
    * - Institution-level config provides oaPrimaryField / oaSecondaryField
    *   and default showDebugPanel.
    * - Per-user settings can override showDebugPanel only.
@@ -151,16 +153,22 @@ export class MainComponent implements OnInit {
       next: (cfg: any) => {
         const cfgAny = cfg || {};
 
+        // Only pull settings keys into settings (avoid mixing config keys)
         this.settings = {
           ...DEFAULT_OA_SETTINGS,
-          ...cfgAny,
-        } as OACompassSettings;
+          oaPrimaryField: (cfgAny.oaPrimaryField ?? DEFAULT_OA_SETTINGS.oaPrimaryField) as any,
+          oaSecondaryField: (cfgAny.oaSecondaryField ?? DEFAULT_OA_SETTINGS.oaSecondaryField) as any,
+          showDebugPanel: (typeof cfgAny.showDebugPanel === 'boolean')
+            ? cfgAny.showDebugPanel
+            : DEFAULT_OA_SETTINGS.showDebugPanel,
+        };
 
         // Default for debug panel comes from institution config
         this.showDebugPanel = this.settings.showDebugPanel;
 
-        // New: OA identifier type code from config (with fallback)
-        this.oaIdTypeCode = (cfgAny.oaIdTypeCode || '02').toString();
+        // OA identifier type code from config (digits only; fallback "02")
+        const raw = (cfgAny.oaIdTypeCode || '02').toString().trim();
+        this.oaIdTypeCode = raw || '02';
 
         // Then overlay user-level preferences
         this.loadUserPreferences();
@@ -400,8 +408,6 @@ export class MainComponent implements OnInit {
     this.state.setLastProxyResponse('');
     this.lastSelfLink = u.link;
 
-    // These are mostly legacy flags from when the search UI lived here,
-    // but keeping them consistent does no harm.
     this.showResults = false;
     this.results = [];
     this.showSearch = false;
@@ -490,7 +496,6 @@ export class MainComponent implements OnInit {
 
   private async refreshAlmaUserSilently(): Promise<void> {
     const savedStatus = this.actionStatus;
-    // lastProxyResponse stays as-is during silent refresh
 
     try {
       if (this.lastSelfLink) {
@@ -548,8 +553,6 @@ export class MainComponent implements OnInit {
 
   /**
    * Load an Alma user based on the Alma entity context (Option A).
-   * Reuses the existing fetchUserByIdNoType() logic so behavior
-   * stays consistent with manual selection.
    */
   private async loadUserFromEntity(primaryId: string): Promise<void> {
     this.selectedUserId = primaryId;
@@ -565,9 +568,6 @@ export class MainComponent implements OnInit {
 
   /**
    * Extract the Alma primary_id from an entity.
-   * In your environment, entity.link looks like '/users/anakintest',
-   * so we pull 'anakintest' out of the path. If that fails, we fall
-   * back to entity.id as a last resort.
    */
   private extractPrimaryIdFromEntity(entity: any): string {
     if (!entity) return '';
@@ -589,7 +589,7 @@ export class MainComponent implements OnInit {
   // OA Resend / Sync / Create (via workflow service)
   // ---------------------------
 
-    async resendActivation(): Promise<void> {
+  async resendActivation(): Promise<void> {
     if (!this.user && !this.selectedUserId) return;
 
     this.state.setBusy(true);
@@ -619,6 +619,32 @@ export class MainComponent implements OnInit {
   async createOA(): Promise<void> {
     if (!this.user && !this.selectedUserId) return;
 
+    // Read current email/domain from the loaded Alma user
+    const email = (this.alma.getEmail(this.user) || '').trim();
+    const domain = (email.split('@')[1] || '').trim().toLowerCase();
+
+    // ✅ Always read latest config at action time (prevents “must restart” behavior)
+    let disallowed = '';
+    try {
+      const cfgAny: any = await firstValueFrom(this.config.get());
+      disallowed = String(cfgAny?.disallowedEmailDomain || '')
+        .trim()
+        .toLowerCase();
+    } catch {
+      // ignore config load errors; treat as no restriction
+      disallowed = '';
+    }
+
+    // ✅ Block account creation for configured SSO/IDP domains (no restart needed)
+    if (disallowed && domain && domain === disallowed) {
+      this.actionStatus = this.translate.instant(
+        'oa.status.createBlockedByDomain',
+        { domain }
+      );
+      this.state.setLastProxyResponse('');
+      return;
+    }
+
     this.state.setBusy(true);
     this.actionStatus = this.translate.instant('oa.status.creating');
     this.state.setLastProxyResponse('');
@@ -633,6 +659,7 @@ export class MainComponent implements OnInit {
       );
 
       this.actionStatus = result.statusText;
+
       if (result.proxyDebugText != null) {
         this.state.setLastProxyResponse(result.proxyDebugText);
       }
@@ -647,6 +674,19 @@ export class MainComponent implements OnInit {
 
   async syncOA(): Promise<void> {
     if (!this.user && !this.selectedUserId) return;
+
+    // ✅ If user is in an excluded email domain, skip OA sync entirely
+    const email = this.alma.getEmail(this.user);
+    if (this.oaProxy.isEmailCreationBlocked(email)) {
+      const domain = (email?.split('@')[1] || '').trim().toLowerCase();
+
+      this.actionStatus =
+        this.translate.instant('oa.status.syncSkippedByDomain', { domain }) ||
+        `Sync skipped: users from ${domain || '(unknown domain)'} should authenticate via the University IDP.`;
+
+      this.state.setLastProxyResponse('');
+      return;
+    }
 
     this.state.setBusy(true);
     this.actionStatus = this.translate.instant('oa.status.syncing');
@@ -676,10 +716,6 @@ export class MainComponent implements OnInit {
 
   /**
    * Top-level Reset button
-   * - Clears current OA status + debug
-   * - Resets search state
-   * - If we have an entity-context user, reloads that user
-   * - Otherwise, returns to a blank search state
    */
   onReset(): void {
     // Clear status/debug

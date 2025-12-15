@@ -82,23 +82,111 @@
   }
 
   /***************************************************************
-   * 2.4 Form fields: underline, primary focus color, border line
-   *     This is intentionally minimal so we don't fight Alma too
-   *     hard, but it should visually match the guide better.
-   ***************************************************************/
+  * 2.4 Form fields: fix MDC floating-label clipping + baseline
+  ***************************************************************/
+
+  /* Underline styling (keep) */
   .mat-mdc-form-field .mdc-line-ripple::before {
-    /* default line */
     border-bottom-color: var(--oa-border);
   }
-
   .mat-mdc-form-field .mdc-line-ripple::after {
-    /* focus line – use Alma primary if available, otherwise purple */
     border-bottom-color: var(--sys-primary, var(--oa-primary));
   }
 
-  /* Slightly heavier input text when focused */
+  /* ✅ Do NOT clip */
+  .mat-mdc-form-field .mat-mdc-text-field-wrapper,
+  .mat-mdc-form-field .mdc-text-field,
+  .mat-mdc-form-field .mat-mdc-form-field-infix {
+    overflow: visible !important;
+  }
+
+  /* ✅ Keep control height consistent */
+  .mat-mdc-form-field .mat-mdc-text-field-wrapper {
+    min-height: 56px;
+  }
+
+  /*
+    ✅ IMPORTANT: stop using infix padding to position the text.
+    It makes the value/label float way too high.
+  */
+  .mat-mdc-form-field.mat-mdc-form-field-appearance-fill .mat-mdc-form-field-infix {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    min-height: 0 !important;
+  }
+
+  /* ✅ Position the text by padding the actual input */
+  .mat-mdc-form-field.mat-mdc-form-field-appearance-fill
+  .mdc-text-field--filled
+  .mdc-text-field__input {
+    padding-top: 24px !important;   /* was 18px */
+    padding-bottom: 10px !important; /* was 12px */
+  }
+
+  /* ✅ Help the resting label not get “sliced” */
+  .mat-mdc-form-field .mdc-floating-label,
+  .mat-mdc-form-field .mat-mdc-floating-label {
+    line-height: 1.2;
+    padding-top: 2px;
+  }
+
+  /* Slightly heavier input text when focused (keep) */
   .mat-mdc-form-field.mdc-text-field--focused .mat-mdc-input-element {
     font-weight: 500;
+  }
+
+  /* ✅ Floating label should be primary (resting + floating) */
+  .mat-mdc-form-field .mdc-floating-label,
+  .mat-mdc-form-field .mat-mdc-floating-label {
+    color: var(--sys-primary, var(--oa-primary)) !important;
+    opacity: 1 !important;
+  }
+
+  /* ✅ Ensure “float above” state stays primary */
+  .mat-mdc-form-field .mdc-floating-label--float-above,
+  .mat-mdc-form-field.mat-focused .mdc-floating-label {
+    color: var(--sys-primary, var(--oa-primary)) !important;
+    opacity: 1 !important;
+  }
+
+  .mat-mdc-form-field .mdc-line-ripple::before {
+    border-bottom-color: var(--sys-primary, var(--oa-primary)) !important; /* was oa-border */
+  }
+  .mat-mdc-form-field .mdc-line-ripple::after {
+    border-bottom-color: var(--sys-primary, var(--oa-primary)) !important;
+  }
+
+  /* ============================================================
+  * Compact form-field sizing (Config + Settings only)
+  * ============================================================ */
+
+  /* Wrapper height */
+  .oa-config-root .mat-mdc-form-field .mat-mdc-text-field-wrapper,
+  .oa-settings-root .mat-mdc-form-field .mat-mdc-text-field-wrapper {
+    min-height: 44px !important;
+    padding-top: 16px !important;
+  }
+
+  /* Infix spacing (controls where label/value sit) */
+  .oa-config-root
+    .mat-mdc-form-field.mat-mdc-form-field-appearance-fill
+    .mat-mdc-form-field-infix,
+  .oa-settings-root
+    .mat-mdc-form-field.mat-mdc-form-field-appearance-fill
+    .mat-mdc-form-field-infix {
+    padding-top: 12px !important;
+    padding-bottom: 8px !important;
+  }
+
+  /* Input padding (controls baseline relative to underline) */
+  .oa-config-root
+    .mat-mdc-form-field.mat-mdc-form-field-appearance-fill
+    .mdc-text-field__input,
+  .oa-settings-root
+    .mat-mdc-form-field.mat-mdc-form-field-appearance-fill
+    .mdc-text-field__input {
+    padding-top: 18px !important;
+    padding-bottom: 8px !important;
   }
 
   /***************************************************************
@@ -122,15 +210,15 @@
   }
 
   /***************************************************************
-   * 2.6 Main search-field fixes (prevents floating-label clipping)
-   ***************************************************************/
+  * 2.6 Main search-field fixes (prevents floating-label clipping)
+  ***************************************************************/
   .oa-user-search-root .oa-search-field.mat-mdc-form-field {
     height: auto;
     min-height: 56px;
   }
 
   .oa-user-search-root .oa-search-field .mat-mdc-text-field-wrapper {
-    overflow: visible;
+    overflow: visible !important;
     min-height: 56px;
   }
 
@@ -139,14 +227,34 @@
     align-items: center;
   }
 
+  /* ✅ Do NOT set infix padding here either */
   .oa-user-search-root .oa-search-field .mat-mdc-form-field-infix {
-    padding-top: 16px;
-    padding-bottom: 10px;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  /* ✅ Let the input padding control baseline */
+  .oa-user-search-root .oa-search-field
+  .mdc-text-field--filled
+  .mdc-text-field__input {
+    padding-top: 18px !important;
+    padding-bottom: 12px !important;
   }
 
   .oa-user-search-root .oa-search-field .mdc-floating-label,
   .oa-user-search-root .oa-search-field .mat-mdc-floating-label {
-    line-height: 1.4;
+    line-height: 1.2;
+    padding-top: 2px;
+  }
+
+  /* Give the search area breathing room so the floating label doesn't rise into OA Status */
+  .oa-user-search-root {
+    padding-top: 14px;
+  }
+
+  /* Extra safety: add a little margin above the field itself */
+  .oa-user-search-root .oa-search-field.mat-mdc-form-field {
+    margin-top: 6px;
   }
 
   /***************************************************************

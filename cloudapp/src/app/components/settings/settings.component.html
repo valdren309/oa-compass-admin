@@ -17,36 +17,6 @@
       class="settings-form"
       *ngIf="!loading">
 
-      <!-- OA username storage (institution-level, read-only) -->
-      <section class="settings-section">
-        <h3 class="settings-section__title">
-          {{ 'oa.settings.usernameStorageTitle' | translate }}
-        </h3>
-        <p class="settings-section__help">
-          {{ 'oa.settings.usernameStorageHelp' | translate }}
-        </p>
-
-        <div class="settings-grid">
-          <div class="settings-select">
-            <div class="settings-select__label">
-              {{ 'oa.settings.primaryFieldLabel' | translate }}
-            </div>
-            <div class="settings-select__box">
-              {{ settings.oaPrimaryField || 'job_description' }}
-            </div>
-          </div>
-
-          <div class="settings-select">
-            <div class="settings-select__label">
-              {{ 'oa.settings.secondaryFieldLabel' | translate }}
-            </div>
-            <div class="settings-select__box">
-              {{ settings.oaSecondaryField || 'none' }}
-            </div>
-          </div>
-        </div>
-      </section>
-
       <!-- Display options (per-user) -->
       <section class="settings-section">
         <h3 class="settings-section__title">

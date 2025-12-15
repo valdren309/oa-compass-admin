@@ -1,4 +1,3 @@
-// src/app/services/oa-proxy.service.ts
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
@@ -33,6 +32,15 @@ export class OAProxyService {
    */
   private baseUrl = 'https://app.lib.iastate.edu/oa-proxy';
 
+  /** Configured Alma identifier type code used for OA username storage. */
+  private oaIdTypeCode = '02';
+
+  /**
+   * Email domain that should not get a local OA account created
+   * (e.g. "iastate.edu"). Null/empty means no restriction.
+   */
+  private disallowedEmailDomain: string | null = null;
+
   private json() {
     return { headers: new HttpHeaders({ 'Content-Type': 'application/json' }) };
   }
@@ -41,20 +49,27 @@ export class OAProxyService {
     private http: HttpClient,
     private configService: CloudAppConfigService,
   ) {
-    // Load proxyBaseUrl from Cloud App config, with fallback to the default.
+    // Load proxyBaseUrl + behavior flags from Cloud App config.
     this.configService.get().subscribe({
       next: (cfg: any) => {
+        // Proxy URL
         const url = (cfg?.proxyBaseUrl || '').toString().trim();
         if (url && url.startsWith('https://')) {
           this.baseUrl = url;
         } else if (url) {
-          // Non-HTTPS overrides are ignored for security reasons.
-          // If needed, this can be surfaced in a debug/config view.
           console.warn('OAProxyService: Ignoring non-HTTPS proxyBaseUrl from config.');
         }
+
+        // ID type code (digits only, fallback "02")
+        const rawCode = (cfg?.oaIdTypeCode || '').toString().trim();
+        this.oaIdTypeCode = rawCode || '02';
+
+        // Disallowed email domain (normalized to lowercase)
+        const badDomain = (cfg?.disallowedEmailDomain || '').toString().trim().toLowerCase();
+        this.disallowedEmailDomain = badDomain || null;
       },
       error: () => {
-        // Ignore errors; keep default baseUrl
+        // Ignore errors; keep defaults.
       },
     });
   }
@@ -118,8 +133,23 @@ export class OAProxyService {
   // ============================================================
 
   /**
+   * Returns true if the configured disallowedEmailDomain should prevent
+   * creating a local OA account for this email.
+   *
+   * Usage (in your create flow):
+   *   if (oaProxy.isEmailCreationBlocked(email)) { skip OA create; ... }
+   */
+  isEmailCreationBlocked(email?: string | null): boolean {
+    if (!email || !this.disallowedEmailDomain) return false;
+    const parts = email.split('@');
+    if (parts.length < 2) return false;
+    const domain = parts[1].toLowerCase().trim();
+    return domain === this.disallowedEmailDomain;
+  }
+
+  /**
    * Find an OA account corresponding to an Alma user by:
-   *   1) OA username stored in Alma identifiers (type code, default "02")
+   *   1) OA username stored in Alma identifiers (configured type code)
    *   2) Email address from Alma user
    *   3) Alma primary_id
    *
@@ -128,7 +158,7 @@ export class OAProxyService {
   async findAccountByAlmaUser(
     user: AlmaUser | null,
     alma: AlmaUserService,
-    oaIdTypeCode: string = '02'
+    oaIdTypeCode?: string
   ): Promise<OAGetResponse | null> {
 
     if (!user) return null;
@@ -136,8 +166,11 @@ export class OAProxyService {
     const email = alma.getEmail(user);
     const pid = user.primary_id;
 
+    const effectiveCode =
+      (oaIdTypeCode || this.oaIdTypeCode || '02').toString().trim();
+
     // 1) Try OA username from Alma identifiers
-    const knownUsername = alma.getOAUsernameFromIdentifiers(user, oaIdTypeCode);
+    const knownUsername = alma.getOAUsernameFromIdentifiers(user, effectiveCode);
     if (knownUsername) {
       const byId = await this.get({ username: knownUsername }).catch(() => null);
       if (byId?.account) {
