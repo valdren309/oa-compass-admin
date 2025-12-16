@@ -22,7 +22,7 @@
    "contentSecurity": {
       "connectSrc": [
          "https://api-na.hosted.exlibrisgroup.com",
-         "https://app.lib.iastate.edu"
+         "[Proxy Host]"
       ]
    }
 }
